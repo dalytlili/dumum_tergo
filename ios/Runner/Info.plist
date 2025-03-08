@@ -45,5 +45,17 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+
+	<!-- Ajouter le schéma d'URL personnalisé ici -->
+	<key>CFBundleURLTypes</key>
+<array>
+    <dict>
+        <key>CFBundleURLSchemes</key>
+        <array>
+            <string>dumumtergo</string> <!-- Le même schéma que pour Android -->
+        </array>
+    </dict>
+</array>
+
 </dict>
 </plist>

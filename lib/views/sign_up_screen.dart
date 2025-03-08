@@ -93,13 +93,17 @@ class _SignUpScreenContentState extends State<_SignUpScreenContent> {
                 _buildSocialButton(
                   'Sign up with Gmail',
                   'assets/images/google_icon.png',
-                  onPressed: () {},
+                 onPressed: () async {
+    await viewModel.loginWithGoogle(context);
+                  },
                 ),
                 const SizedBox(height: 12),
                 _buildSocialButton(
                   'Sign up with Facebook',
                   'assets/images/facebook_icon.png',
-                  onPressed: () {},
+                     onPressed: () async {
+                              await viewModel.loginWithFacebook(context);
+                  },
                 ),
                 const SizedBox(height: 12),
                 _buildSocialButton(
@@ -452,29 +456,55 @@ class _SignUpScreenContentState extends State<_SignUpScreenContent> {
     );
   }
 
-  void _handleSignUp(SignUpViewModel viewModel) async {
-    if (_formKey.currentState!.validate()) {
+ void _handleSignUp(SignUpViewModel viewModel) async {
+  if (_formKey.currentState!.validate()) {
+    try {
       final success = await viewModel.signUp();
       if (success && mounted) {
-        // Construct full phone number with country code
+        // Construire le numéro de téléphone complet avec le code du pays
         final fullPhoneNumber =
             '+${viewModel.selectedCountry.phoneCode}${viewModel.phoneController.text}';
 
-        Navigator.pushReplacementNamed(
-          context,
-          '/otp-verification',
-          arguments: fullPhoneNumber,
+        // Afficher une boîte de dialogue pour informer l'utilisateur
+        await showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text('Vérification requise'),
+              content: const Text(
+                  'Un e-mail de vérification a été envoyé à votre adresse e-mail. Veuillez vérifier votre boîte de réception pour activer votre compte.'),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Fermer la boîte de dialogue
+                    // Naviguer vers l'écran de connexion après la fermeture de la boîte de dialogue
+                    Navigator.pushReplacementNamed(
+                      context,
+                      '/signin',
+                      arguments: fullPhoneNumber,
+                    );
+                  },
+                  child: const Text('OK'),
+                ),
+              ],
+            );
+          },
         );
-      } else {
+      }
+    } catch (e) {
+      // Extraire uniquement le message d'erreur
+      final errorMessage = e.toString().replaceFirst('Exception: ', '');
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Échec de l\'inscription. Veuillez réessayer.'),
+          SnackBar(
+            content: Text(errorMessage), // Afficher le message d'erreur
             backgroundColor: Colors.red,
           ),
         );
       }
     }
   }
+}
 
   Widget _buildSocialButton(
     String text,

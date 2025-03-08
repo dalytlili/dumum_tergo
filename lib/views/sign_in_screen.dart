@@ -1,309 +1,290 @@
+import 'package:dumum_tergo/services/login_service.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:country_picker/country_picker.dart';
+import '../viewmodels/SignInViewModel.dart';
 import '../constants/colors.dart';
 
-class SignInScreen extends StatefulWidget {
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+// Créez une instance de FlutterSecureStorage
+final storage = FlutterSecureStorage();
+class SignInScreen extends StatelessWidget {
   const SignInScreen({super.key});
 
   @override
-  State<SignInScreen> createState() => _SignInScreenState();
-}
-
-class _SignInScreenState extends State<SignInScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  bool _isPasswordVisible = false;
-  Country _selectedCountry = Country(
-    phoneCode: "216",
-    countryCode: "TN",
-    e164Sc: 0,
-    geographic: true,
-    level: 1,
-    name: "Tunisia",
-    example: "Tunisia",
-    displayName: "Tunisia",
-    displayNameNoCountryCode: "TN",
-    e164Key: "",
-  );
-  bool _isPhoneMode = false;
-
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
-  }
-
-  void _signInWithEmailAndPassword(BuildContext context) {
-    if (_formKey.currentState!.validate()) {
-      // Simulation de la connexion avec un backend statique
-      final email = _emailController.text;
-      final password = _passwordController.text;
-
-      if (email == "test@example.com" && password == "password123") {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Connexion réussie')),
-        );
-        Navigator.pushReplacementNamed(context, '/home');
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Échec de la connexion')),
-        );
-      }
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final maxWidth = MediaQuery.of(context).size.width;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Se connecter'),
-        centerTitle: true,
+    return ChangeNotifierProvider(
+      create: (context) => SignInViewModel(
+        loginService: LoginService(client: http.Client()),
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'Connectez-vous avec votre e-mail ou numéro de téléphone',
-                  style: TextStyle(
-                    fontSize: maxWidth > 600 ? 24 : 20,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white
-                        : Colors.grey[800],
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 32),
-                TextFormField(
-                  controller: _emailController,
-                  keyboardType: _isPhoneMode
-                      ? TextInputType.phone
-                      : TextInputType.emailAddress,
-                  decoration: InputDecoration(
-                    hintText: _isPhoneMode ? 'Numéro de téléphone' : 'E-mail',
-                    prefixIcon: _isPhoneMode
-                        ? InkWell(
-                            onTap: () {
-                              showCountryPicker(
-                                context: context,
-                                showPhoneCode: true,
-                                onSelect: (Country country) {
-                                  setState(() {
-                                    _selectedCountry = country;
-                                  });
-                                },
-                              );
-                            },
-                            child: Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 12),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    _selectedCountry.flagEmoji,
-                                    style: const TextStyle(fontSize: 20),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    '+${_selectedCountry.phoneCode}',
-                                    style: TextStyle(
-                                      color: Theme.of(context).brightness ==
-                                              Brightness.dark
-                                          ? Colors.white70
-                                          : Colors.grey[700],
-                                      fontSize: 14,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Se connecter'),
+          centerTitle: true,
+        ),
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24.0),
+            child: Consumer<SignInViewModel>(
+              builder: (context, viewModel, child) {
+                final maxWidth = MediaQuery.of(context).size.width;
+
+                return Form(
+                  key: viewModel.formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'Connectez-vous avec votre e-mail ou numéro de téléphone',
+                        style: TextStyle(
+                          fontSize: maxWidth > 600 ? 24 : 20,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.white
+                              : Colors.grey[800],
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 32),
+                      TextFormField(
+                        controller: viewModel.emailController,
+                        keyboardType: viewModel.isPhoneMode
+                            ? TextInputType.phone
+                            : TextInputType.emailAddress,
+                        decoration: InputDecoration(
+                          hintText: viewModel.isPhoneMode
+                              ? 'Numéro de téléphone'
+                              : 'E-mail',
+                          prefixIcon: viewModel.isPhoneMode
+                              ? InkWell(
+                                  onTap: () {
+                                    showCountryPicker(
+                                      context: context,
+                                      showPhoneCode: true,
+                                      onSelect: (Country country) {
+                                        viewModel.setSelectedCountry(country);
+                                      },
+                                    );
+                                  },
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          viewModel.selectedCountry.flagEmoji,
+                                          style: const TextStyle(fontSize: 20),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          '+${viewModel.selectedCountry.phoneCode}',
+                                          style: TextStyle(
+                                            color:
+                                                Theme.of(context).brightness ==
+                                                        Brightness.dark
+                                                    ? Colors.white70
+                                                    : Colors.grey[700],
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Icon(
+                                          Icons.arrow_drop_down,
+                                          color: Theme.of(context).brightness ==
+                                                  Brightness.dark
+                                              ? Colors.white70
+                                              : Colors.grey[700],
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
-                                  Icon(
-                                    Icons.arrow_drop_down,
-                                    color: Theme.of(context).brightness ==
-                                            Brightness.dark
-                                        ? Colors.white70
-                                        : Colors.grey[700],
-                                  ),
-                                ],
+                                )
+                              : null,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(
+                                color: AppColors.primary, width: 1.5),
+                          ),
+                          suffixIcon: IconButton(
+                            icon: Icon(viewModel.isPhoneMode
+                                ? Icons.email
+                                : Icons.phone),
+                            onPressed: viewModel.togglePhoneMode,
+                          ),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return viewModel.isPhoneMode
+                                ? 'Veuillez entrer votre numéro'
+                                : 'Veuillez entrer votre email';
+                          }
+
+                          if (viewModel.isPhoneMode) {
+                            if (!RegExp(r'^\d+$').hasMatch(value)) {
+                              return 'Veuillez entrer un numéro valide';
+                            }
+                          } else {
+                            if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                                .hasMatch(value)) {
+                              return 'Veuillez entrer un email valide';
+                            }
+                          }
+
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: viewModel.passwordController,
+                        obscureText: !viewModel.isPasswordVisible,
+                        decoration: InputDecoration(
+                          hintText: 'Entrez votre mot de passe',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(
+                                color: AppColors.primary, width: 1.5),
+                          ),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              viewModel.isPasswordVisible
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                            ),
+                            onPressed: viewModel.togglePasswordVisibility,
+                          ),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Veuillez entrer votre mot de passe';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.of(context).pushNamed('/forgot-password');
+                        },
+                        child: Text(
+                          'Mot de passe oublié?',
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Checkbox(
+                            value: viewModel.rememberMe,
+                            onChanged: (value) {
+                              viewModel.toggleRememberMe(value ?? false);
+                            },
+                          ),
+                          Text('Se souvenir de moi'),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: viewModel.isLoading
+                            ? null
+                            : () => viewModel.loginUser(context),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: viewModel.isLoading
+                            ? CircularProgressIndicator(color: Colors.white)
+                            : Text(
+                                'Connexion',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(child: Divider(color: Colors.grey.shade400)),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(
+                              'ou',
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: maxWidth > 600 ? 16 : 14,
                               ),
                             ),
-                          )
-                        : null,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide:
-                          BorderSide(color: AppColors.primary, width: 1.5),
-                    ),
-                    suffixIcon: IconButton(
-                      icon: Icon(_isPhoneMode ? Icons.email : Icons.phone),
-                      onPressed: () {
-                        setState(() {
-                          _isPhoneMode = !_isPhoneMode;
-                          _emailController.clear();
-                        });
-                      },
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return _isPhoneMode
-                          ? 'Veuillez entrer votre numéro'
-                          : 'Veuillez entrer votre email';
-                    }
+                          ),
+                          Expanded(child: Divider(color: Colors.grey.shade400)),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                 _buildSocialButton(
+  'Inscrivez-vous avec Gmail',
+  'assets/images/google_icon.png',
+onPressed: () async {
+    await viewModel.loginWithGoogle(context);
+  },),
+                      const SizedBox(height: 12),
+                      _buildSocialButton(
+                        'Inscrivez-vous avec Facebook',
+                        'assets/images/facebook_icon.png',
+                        onPressed: () async {
+                              await viewModel.loginWithFacebook(context);
 
-                    if (_isPhoneMode) {
-                      if (!RegExp(r'^\d+$').hasMatch(value)) {
-                        return 'Veuillez entrer un numéro valide';
-                      }
-                    } else {
-                      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                          .hasMatch(value)) {
-                        return 'Veuillez entrer un email valide';
-                      }
-                    }
-
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _passwordController,
-                  obscureText: !_isPasswordVisible,
-                  decoration: InputDecoration(
-                    hintText: 'Entrez votre mot de passe',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide:
-                          BorderSide(color: AppColors.primary, width: 1.5),
-                    ),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _isPasswordVisible
-                            ? Icons.visibility_off
-                            : Icons.visibility,
+                        },
                       ),
-                      onPressed: () {
-                        setState(() {
-                          _isPasswordVisible = !_isPasswordVisible;
-                        });
-                      },
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Veuillez entrer votre mot de passe';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 8),
-                GestureDetector(
-                  onTap: () {
-                    Navigator.of(context).pushNamed('/forgot-password');
-                  },
-                  child: Text(
-                    'Mot de passe oublié?',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: () => _signInWithEmailAndPassword(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  child: Text(
-                    'Connexion',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(child: Divider(color: Colors.grey.shade400)),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        'ou',
-                        style: TextStyle(
-                          color: Colors.grey.shade600,
-                          fontSize: maxWidth > 600 ? 16 : 14,
-                        ),
+                      const SizedBox(height: 12),
+                      _buildSocialButton(
+                        'Inscrivez-vous avec Apple',
+                        'assets/images/apple_icon.png',
+                        onPressed: () {},
                       ),
-                    ),
-                    Expanded(child: Divider(color: Colors.grey.shade400)),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                _buildSocialButton(
-                  'Inscrivez-vous avec Gmail',
-                  'assets/images/google_icon.png',
-                  onPressed: () {},
-                ),
-                const SizedBox(height: 12),
-                _buildSocialButton(
-                  'Inscrivez-vous avec Facebook',
-                  'assets/images/facebook_icon.png',
-                  onPressed: () {},
-                ),
-                const SizedBox(height: 12),
-                _buildSocialButton(
-                  'Inscrivez-vous avec Apple',
-                  'assets/images/apple_icon.png',
-                  onPressed: () {},
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Vous n\'avez pas de compte ? ',
-                      style: TextStyle(
-                        fontSize: maxWidth > 600 ? 16 : 14,
-                        color: Colors.grey[600],
+                      const SizedBox(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Vous n\'avez pas de compte ? ',
+                            style: TextStyle(
+                              fontSize: maxWidth > 600 ? 16 : 14,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pushNamed(context, '/signup');
+                            },
+                            child: Text(
+                              'Créer un compte',
+                              style: TextStyle(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pushNamed(context, '/signup');
-                      },
-                      child: Text(
-                        'Créer un compte',
-                        style: TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                );
+              },
             ),
           ),
         ),

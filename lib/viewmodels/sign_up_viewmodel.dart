@@ -1,13 +1,16 @@
 import 'package:country_picker/country_picker.dart';
+import 'package:dumum_tergo/main.dart';
+import 'package:dumum_tergo/views/sign_in_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
+import '../services/auth_service.dart'; // Importer le service
 
 class SignUpViewModel extends ChangeNotifier {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  final TextEditingController confirmPasswordController =
-      TextEditingController();
+  final TextEditingController confirmPasswordController = TextEditingController();
 
   Country selectedCountry = Country(
     phoneCode: "216",
@@ -52,47 +55,138 @@ class SignUpViewModel extends ChangeNotifier {
     acceptedTerms = value ?? false;
     notifyListeners();
   }
-
-  Future<bool> signUp() async {
-    // Validate input
-    if (!_validateInputs()) {
-      return false;
-    }
-
-    isLoading = true;
-    notifyListeners();
+ Future<void> loginWithGoogle(BuildContext context) async {
+    final url = 'http://localhost:9098/auth/google';
 
     try {
-      // TODO: Implement actual sign-up logic with backend
-      print('Inscription avec :');
-      print('Nom: ${nameController.text}');
-      print('Email: ${emailController.text}');
-      print('Téléphone: +${selectedCountry.phoneCode}${phoneController.text}');
-      print('Genre: $selectedGender');
-      print('Mot de passe: ${passwordController.text}');
+      final result = await FlutterWebAuth2.authenticate(
+        url: url,
+        callbackUrlScheme: 'dumumtergo',
+      );
 
-      // Simulate network delay
-      await Future.delayed(const Duration(seconds: 2));
+      final uri = Uri.parse(result);
+      print('URL de retour: $uri'); // Affichez l'URL de retour pour vérification
 
-      return true;
+      final accessToken = uri.queryParameters['accessToken'];
+      final refreshToken = uri.queryParameters['refreshToken'];
+
+      if (accessToken != null && refreshToken != null) {
+        // Enregistrer les tokens dans FlutterSecureStorage
+        await storage.write(key: 'token', value: accessToken); // Clé 'token'
+        await storage.write(key: 'refreshToken', value: refreshToken);
+
+        print('Tokens enregistrés avec succès');
+        print('Access Token: $accessToken');
+        print('Refresh Token: $refreshToken');
+
+        // Afficher un message de succès
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Connexion avec Google réussie')),
+        );
+
+        // Naviguer vers la page d'accueil
+        Navigator.pushReplacementNamed(context, '/home');
+      } else {
+        throw Exception('Tokens non reçus');
+      }
     } catch (e) {
-      print('Erreur d\'inscription: $e');
-      return false;
-    } finally {
-      isLoading = false;
-      notifyListeners();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur lors de la connexion avec Google.')),
+      );
     }
   }
 
+
+ Future<void> loginWithFacebook(BuildContext context) async {
+    final url = 'http://localhost:9098/auth/facebook/callback';
+
+    try {
+      final result = await FlutterWebAuth2.authenticate(
+        url: url,
+        callbackUrlScheme: 'dumumtergo',
+      );
+
+      final uri = Uri.parse(result);
+      print('URL de retour: $uri'); // Affichez l'URL de retour pour vérification
+
+      final accessToken = uri.queryParameters['accessToken'];
+      final refreshToken = uri.queryParameters['refreshToken'];
+
+      if (accessToken != null && refreshToken != null) {
+        // Enregistrer les tokens dans FlutterSecureStorage
+        await storage.write(key: 'token', value: accessToken); // Clé 'token'
+        await storage.write(key: 'refreshToken', value: refreshToken);
+
+        print('Tokens enregistrés avec succès');
+        print('Access Token: $accessToken');
+        print('Refresh Token: $refreshToken');
+
+        // Afficher un message de succès
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Connexion avec Facebook réussie')),
+        );
+
+        // Naviguer vers la page d'accueil
+        Navigator.pushReplacementNamed(context, '/home');
+      } else {
+        throw Exception('Tokens non reçus');
+      }
+    } catch (e) {
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur lors de la connexion avec Facebook.')),
+      );
+    }
+  }
+  Future<bool> signUp() async {
+  // Valider les entrées
+  if (!_validateInputs()) {
+    throw Exception('Veuillez remplir tous les champs correctement.');
+  }
+
+  isLoading = true;
+  notifyListeners();
+
+  try {
+    // Construire le numéro de téléphone complet avec le code du pays
+    final fullMobileNumber = '+${selectedCountry.phoneCode}${phoneController.text}';
+
+    // Appeler le service d'enregistrement avec le numéro de téléphone complet
+    final response = await AuthService.register(
+      name: nameController.text,
+      genre: selectedGender,
+      email: emailController.text,
+      mobile: fullMobileNumber, // Utiliser le numéro de téléphone complet
+      password: passwordController.text,
+    );
+
+    // Vérifier si l'enregistrement a réussi
+    if (response['success'] == true) {
+      debugPrint('Enregistrement réussi: ${response['msg']}');
+      debugPrint('Utilisateur enregistré: ${response['user']}');
+      return true;
+    } else {
+      // Si l'enregistrement échoue, extraire le message d'erreur
+      final errorMessage = response['msg'] ?? 'Erreur inconnue';
+      throw Exception(errorMessage); // Lancer une exception avec le message d'erreur
+    }
+  } catch (e) {
+    // Capturer l'exception et la propager
+    debugPrint('Erreur lors de l\'enregistrement: $e');
+    throw Exception('Erreur lors de l\'enregistrement: ${e.toString()}');
+  } finally {
+    isLoading = false;
+    notifyListeners();
+  }
+}
   bool _validateInputs() {
-    // Implement comprehensive validation
+    // Valider les entrées
     if (nameController.text.isEmpty) {
       return false;
     }
 
     if (emailController.text.isEmpty ||
-        !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-            .hasMatch(emailController.text)) {
+        !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(emailController.text)) {
       return false;
     }
 
@@ -101,8 +195,7 @@ class SignUpViewModel extends ChangeNotifier {
       return false;
     }
 
-    if (selectedGender.isEmpty ||
-        !['Homme', 'Femme', 'Autre'].contains(selectedGender)) {
+    if (selectedGender.isEmpty || !['Homme', 'Femme'].contains(selectedGender)) {
       return false;
     }
 

@@ -1,19 +1,20 @@
+import 'package:dumum_tergo/views/set_password_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/otp_verification_viewmodel.dart';
 
 class OtpVerificationScreen extends StatelessWidget {
-  final String fullPhoneNumber;
+  final String phoneNumber;
 
   const OtpVerificationScreen({
     super.key,
-    required this.fullPhoneNumber,
+    required this.phoneNumber,
   });
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => OtpVerificationViewModel(fullPhoneNumber: fullPhoneNumber),
+      create: (_) => OtpVerificationViewModel(fullPhoneNumber: phoneNumber),
       child: const _OtpVerificationScreenContent(),
     );
   }
@@ -71,7 +72,7 @@ class _OtpVerificationScreenContentState
               ),
               const SizedBox(height: 16),
               Text(
-                'Entrez le code envoyé à ${viewModel.fullPhoneNumber}\nCode de test: 123456',
+                'Entrez le code envoyé à ${viewModel.fullPhoneNumber}',
                 style: Theme.of(context).textTheme.bodyMedium,
                 textAlign: TextAlign.center,
               ),
@@ -115,30 +116,55 @@ class _OtpVerificationScreenContentState
 
               // Bouton de vérification
               ElevatedButton(
-                onPressed: viewModel.isLoading
+  onPressed: viewModel.isLoading
+      ? null
+      : () async {
+          final success = await viewModel.verifyOTP();
+          if (success && mounted) {
+            debugPrint('User ID avant navigation: ${viewModel.userId}'); // Afficher userId
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (context) => SetPasswordScreen(),
+                settings: RouteSettings(arguments: viewModel.userId), // Passer userId ici
+              ),
+            );
+          } else if (mounted) {
+            // Clear OTP inputs if failed
+            for (var controller in _otpControllers) {
+              controller.clear();
+            }
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Code OTP invalide'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        },
+  style: ElevatedButton.styleFrom(
+    padding: const EdgeInsets.symmetric(vertical: 16),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(8),
+    ),
+  ),
+  child: viewModel.isLoading
+      ? const CircularProgressIndicator()
+      : const Text('Vérifier'),
+),
+              const SizedBox(height: 16),
+
+              // Bouton pour renvoyer le code
+              TextButton(
+                onPressed: viewModel.countdown > 0 || viewModel.isLoading
                     ? null
                     : () async {
-                        final success = await viewModel.verifyOTP();
-                        if (success && mounted) {
-                          Navigator.of(context).pushReplacementNamed('/home');
-                        } else if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Code OTP invalide'),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
+                        await viewModel.resendOtp();
                       },
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+                child: Text(
+                  viewModel.countdown > 0
+                      ? 'Renvoyer le code (${viewModel.countdown}s)'
+                      : 'Renvoyer le code',
                 ),
-                child: viewModel.isLoading
-                    ? const CircularProgressIndicator()
-                    : const Text('Vérifier'),
               ),
             ],
           ),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart'; // Importez Provider
 import '../constants/colors.dart';
-import 'package:dumum_tergo/views/onboarding_screens.dart';
+import '../viewmodels/SignInViewModel.dart'; // Importez votre ViewModel
+import 'onboarding_screens.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -44,7 +46,7 @@ class _SplashScreenState extends State<SplashScreen>
     )..repeat();
 
     _controller.forward();
-    _navigateToWelcome();
+    _checkAutoLogin(); // Appeler _checkAutoLogin au lieu de _navigateToWelcome
   }
 
   @override
@@ -53,15 +55,18 @@ class _SplashScreenState extends State<SplashScreen>
     _fadeController.dispose();
     super.dispose();
   }
+Future<void> _checkAutoLogin() async {
+  await Future.delayed(const Duration(seconds: 2)); // Ajoutez un délai de 2 secondes
 
-  Future<void> _navigateToWelcome() async {
-    await Future.delayed(const Duration(seconds: 2));
-    if (!mounted) return;
+  final signInViewModel = Provider.of<SignInViewModel>(context, listen: false);
+  await signInViewModel.autoLogin(context);
 
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => const OnboardingScreens()),
-    );
+  if (signInViewModel.isLoggedIn) {
+    Navigator.pushReplacementNamed(context, '/home');
+  } else {
+    Navigator.pushReplacementNamed(context, '/onboarding');
   }
+}
 
   Widget _buildDot(int index) {
     final double opacity =

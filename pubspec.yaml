@@ -40,7 +40,10 @@ dependencies:
   url_launcher: ^6.3.1
   webview_flutter: ^4.10.0
   flutter_web_auth_2: ^4.1.0
- 
+  image_picker: ^1.1.2
+  web_socket_channel: ^3.0.2
+  
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -66,5 +69,11 @@ flutter:
     - assets/images/image2.png
     - assets/images/image3.png
     - assets/images/logo.png
+    - assets/images/images.png
     - assets/images/tunisia.png
+    - assets/images/1024.png
+    - assets/images/default.png
+
+
+
     - assets/images/welcome_illustration.png

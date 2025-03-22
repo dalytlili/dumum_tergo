@@ -105,12 +105,7 @@ class _SignUpScreenContentState extends State<_SignUpScreenContent> {
                               await viewModel.loginWithFacebook(context);
                   },
                 ),
-                const SizedBox(height: 12),
-                _buildSocialButton(
-                  'Sign up with Apple',
-                  'assets/images/apple_icon.png',
-                  onPressed: () {},
-                ),
+            
                 const SizedBox(height: 24),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,

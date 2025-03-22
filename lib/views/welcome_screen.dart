@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../constants/colors.dart';
+import '../constants/colors.dart'; // Assurez-vous que ce fichier existe et contient vos couleurs
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -13,7 +13,7 @@ class WelcomeScreen extends StatelessWidget {
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: BoxDecoration(),
+        decoration: const BoxDecoration(), // Pas de dégradé pour garder les couleurs d'origine
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -23,7 +23,7 @@ class WelcomeScreen extends StatelessWidget {
               children: [
                 const Spacer(),
                 Image.asset(
-                  'assets/images/welcome_illustration.png',
+                  'assets/images/welcome_illustration.png', // Assurez-vous d'avoir cette image dans vos assets
                   height: maxHeight * 0.3,
                 ),
                 const SizedBox(height: 32),
@@ -32,7 +32,9 @@ class WelcomeScreen extends StatelessWidget {
                   style: TextStyle(
                     fontSize: maxWidth > 600 ? 32 : 24,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black,
+                     color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.white
+                              : Colors.grey[800], // Couleur d'origine
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -41,23 +43,28 @@ class WelcomeScreen extends StatelessWidget {
                   'Trouvez tout ce dont vous avez besoin pour un camping inoubliable.',
                   style: TextStyle(
                     fontSize: maxWidth > 600 ? 18 : 16,
-                    color: Colors.black.withOpacity(0.8),
+                     color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.white
+                              : Colors.grey[800], // Couleur d'origine
                   ),
                   textAlign: TextAlign.center,
                 ),
                 const Spacer(),
-                ElevatedButton(
-                  onPressed: () => Navigator.pushNamed(context, '/signup'),
+                ElevatedButton.icon(
+                  onPressed: () => Navigator.pushNamed(context, '/signin_seller'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
+                    backgroundColor: AppColors.primary, // Couleur d'origine
+                    foregroundColor: Colors.white, // Couleur d'origine
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: Text(
-                    'Inscrivez-vous',
+                  icon: const Icon(Icons.store, size: 24,
+                                      color: AppColors.background, // Couleur d'origine
+), // Icône pour le vendeur
+                  label: Text(
+                    'Je suis un Vendeur',
                     style: TextStyle(
                       fontSize: maxWidth > 600 ? 18 : 16,
                       fontWeight: FontWeight.bold,
@@ -65,18 +72,19 @@ class WelcomeScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                OutlinedButton(
+                OutlinedButton.icon(
                   onPressed: () => Navigator.pushNamed(context, '/signin'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.primary,
-                    side: const BorderSide(color: AppColors.primary, width: 2),
+                    foregroundColor: AppColors.primary, // Couleur d'origine
+                    side: const BorderSide(color: AppColors.primary, width: 2), // Couleur d'origine
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: Text(
-                    'Se connecter',
+                  icon: const Icon(Icons.person, size: 24), // Icône pour l'utilisateur
+                  label: Text(
+                    'Je suis un Utilisateur',
                     style: TextStyle(
                       fontSize: maxWidth > 600 ? 18 : 16,
                       fontWeight: FontWeight.bold,

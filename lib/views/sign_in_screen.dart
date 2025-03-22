@@ -250,12 +250,7 @@ onPressed: () async {
 
                         },
                       ),
-                      const SizedBox(height: 12),
-                      _buildSocialButton(
-                        'Inscrivez-vous avec Apple',
-                        'assets/images/apple_icon.png',
-                        onPressed: () {},
-                      ),
+                   
                       const SizedBox(height: 24),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,

@@ -1,10 +1,9 @@
-
-
 import 'package:dumum_tergo/constants/colors.dart';
 import 'package:dumum_tergo/viewmodels/SideMenuViewModel.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/theme_viewmodel.dart';
+import '../views/SettingsView.dart'; // Ensure SettingsView is imported
 
 class SideMenuView extends StatelessWidget {
   const SideMenuView({super.key});
@@ -12,119 +11,138 @@ class SideMenuView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeViewModel = context.watch<ThemeViewModel>();
+    final sideMenuViewModel = Provider.of<SideMenuViewModel>(context, listen: false);
+
+    // Fetch user data when the menu is loaded
+    sideMenuViewModel.fetchUserData();
 
     return Container(
       decoration: BoxDecoration(
         border: Border.all(
           color: themeViewModel.isDarkMode ? Colors.grey[700]! : AppColors.primary,
-          width: 0, // Bordure invisible (largeur 0)
+          width: 0, // Invisible border (width 0)
         ),
         borderRadius: const BorderRadius.only(
-          topRight: Radius.circular(70), // Coin supérieur droit arrondi à 70
-          bottomRight: Radius.circular(70), // Coin inférieur droit arrondi à 70
+          topRight: Radius.circular(70), // Top right corner rounded to 70
+          bottomRight: Radius.circular(70), // Bottom right corner rounded to 70
         ),
       ),
       child: ClipRRect(
         borderRadius: const BorderRadius.only(
-          topRight: Radius.circular(70), // Coin supérieur droit arrondi à 70
-          bottomRight: Radius.circular(70), // Coin inférieur droit arrondi à 70
+          topRight: Radius.circular(70), // Top right corner rounded to 70
+          bottomRight: Radius.circular(70), // Bottom right corner rounded to 70
         ),
         child: Drawer(
-          width: 280, // Largeur du menu à 280 pixels
+          width: 280, // Menu width set to 280 pixels
           child: ListView(
             padding: EdgeInsets.zero,
             children: <Widget>[
-              // En-tête du Drawer
+              // Drawer Header
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: themeViewModel.isDarkMode ? Colors.grey[900] : AppColors.primary,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Bouton de retour
-                    const SizedBox(height: 30), // Espacement
+                child: Consumer<SideMenuViewModel>(
+                  builder: (context, viewModel, child) {
+                    return Column(
+                      mainAxisSize: MainAxisSize.min, // Adjust content height
+                      crossAxisAlignment: CrossAxisAlignment.center, // Center horizontally
+                      mainAxisAlignment: MainAxisAlignment.center, // Center vertically
+                      children: [
+                        const SizedBox(height: 30), // Spacing
 
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () {
-                        Navigator.pop(context); // Fermer le menu latéral
-                      },
-                    ),
-                    const SizedBox(height: 10), // Espacement
+                        // Back Button
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: IconButton(
+                            icon: const Icon(Icons.arrow_back, color: Colors.white),
+                            onPressed: () {
+                              Navigator.pop(context); // Close the side menu
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 10), // Spacing
 
-                    // Photo de l'utilisateur
-                    CircleAvatar(
-                      radius: 30,
-                      backgroundImage: AssetImage('assets/images/images.png'),
-                    ),
-                    const SizedBox(height: 10), // Espacement
+                        // User Photo centered
+                    Center(
+child: CircleAvatar(
+  radius: 40, // Augmenté pour une meilleure visibilité
+  backgroundImage: viewModel.profileImageUrl.isNotEmpty
+      ? (viewModel.profileImageUrl.startsWith('http://127.0.0.1:9098')
+          // Vérification si l'URL est exactement "http://127.0.0.1:9098"
+          ? (viewModel.profileImageUrl == 'http://127.0.0.1:9098'
+              ? const AssetImage('assets/images/images.png')
+              : NetworkImage(viewModel.profileImageUrl)) // Si l'URL est valide, utiliser l'image depuis l'URL
+          : (viewModel.profileImageUrl.startsWith('http')
+              ? NetworkImage(viewModel.profileImageUrl) // Image en ligne
+              : AssetImage(viewModel.profileImageUrl) as ImageProvider) // Image locale
+      )
+      : const AssetImage('assets/images/images.png') as ImageProvider, // Image par défaut
+),
 
-                    // Nom de l'utilisateur
-                    const Text(
-                      'Daly Tilii',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 5), // Espacement
+),
+                        const SizedBox(height: 10), // Spacing
 
-                    // E-mail de l'utilisateur
-                    const Text(
-                      'mohammedali.tilii@esprit.tn',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
+                        // User Name centered
+                        Center(
+                          child: Text(
+                            viewModel.name, // Display name
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
 
-              // Éléments du menu
+              // Menu Items
               ListTile(
                 leading: const Icon(Icons.history),
                 title: const Text('History'),
                 onTap: () {
-                  // Naviguer vers la page d'histoire
+                  // Navigate to history page
                 },
               ),
               ListTile(
                 leading: const Icon(Icons.campaign),
                 title: const Text('IA Camping'),
                 onTap: () {
-                  // Naviguer vers la page IA Camping
+                  // Navigate to IA Camping page
                 },
               ),
               ListTile(
                 leading: const Icon(Icons.info_outline),
-                title: const Text('À propos de nous'),
+                title: const Text('About Us'),
                 onTap: () {
-                  // Naviguer vers la page "À propos de nous"
+                  // Navigate to About Us page
                 },
               ),
               ListTile(
                 leading: const Icon(Icons.settings),
-                title: const Text('Paramètres'),
+                title: const Text('Settings'),
                 onTap: () {
-                  // Naviguer vers la page des paramètres
+                  Navigator.pushNamed(context, '/SettingsView');
                 },
               ),
               ListTile(
                 leading: const Icon(Icons.help_outline),
-                title: const Text('Aide et support'),
+                title: const Text('Help & Support'),
                 onTap: () {
-                  // Naviguer vers la page d'aide et support
+                  // Navigate to Help & Support page
                 },
               ),
               ListTile(
                 leading: const Icon(Icons.logout),
-                title: const Text('Se déconnecter'),
+                title: const Text('Logout'),
                 onTap: () {
-                  // Logique pour se déconnecter
+                  // Logic to logout
                   _showLogoutDialog(context);
                 },
               ),
@@ -135,7 +153,7 @@ class SideMenuView extends StatelessWidget {
     );
   }
 
-  // Fonction pour afficher une boîte de dialogue de confirmation de déconnexion
+  // Function to show a logout confirmation dialog
   void _showLogoutDialog(BuildContext context) {
     final sideMenuViewModel = Provider.of<SideMenuViewModel>(context, listen: false);
 
@@ -143,14 +161,14 @@ class SideMenuView extends StatelessWidget {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Se déconnecter'),
-          content: const Text('Êtes-vous sûr de vouloir vous déconnecter ?'),
+          title: const Text('Logout'),
+          content: const Text('Are you sure you want to logout?'),
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.pop(context); // Fermer la boîte de dialogue
+                Navigator.pop(context); // Close the dialog
               },
-              child: const Text('Annuler'),
+              child: const Text('Cancel'),
             ),
             TextButton(
               onPressed: () async {
@@ -163,7 +181,7 @@ class SideMenuView extends StatelessWidget {
                   );
                 }
               },
-              child: const Text('Déconnecter'),
+              child: const Text('Logout'),
             ),
           ],
         );

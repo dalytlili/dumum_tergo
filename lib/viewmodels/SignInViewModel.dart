@@ -63,6 +63,8 @@ class SignInViewModel with ChangeNotifier {
   final LoginService loginService;
 
   SignInViewModel({required this.loginService});
+
+  
  Future<void> autoLogin(BuildContext context) async {
     final email = await storage.read(key: 'email');
     final password = await storage.read(key: 'password');
@@ -77,6 +79,10 @@ class SignInViewModel with ChangeNotifier {
     }
     notifyListeners();
   }
+
+
+
+
   Future<void> loginWithGoogle(BuildContext context) async {
     final url = 'http://localhost:9098/auth/google';
 
@@ -114,7 +120,9 @@ class SignInViewModel with ChangeNotifier {
     } catch (e) {
       print("Erreur lors de la connexion avec Google: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur lors de la connexion avec Google: $e')),
+        SnackBar(content: Text('Erreur lors de la connexion avec Google: $e'),
+          backgroundColor: Colors.red,),
+        
       );
     }
   }
@@ -157,10 +165,13 @@ class SignInViewModel with ChangeNotifier {
     } catch (e) {
       print("Erreur lors de la connexion avec Google: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur lors de la connexion avec Google: $e')),
+        SnackBar(content: Text('Erreur lors de la connexion avec Google: $e'),
+          backgroundColor: Colors.red,),
       );
     }
   }
+
+
 Future<void> loginUser(BuildContext context) async {
   // Vérifier si _formKey.currentState est null
   if (_formKey.currentState == null || !_formKey.currentState!.validate()) {
@@ -170,7 +181,9 @@ Future<void> loginUser(BuildContext context) async {
   // Vérifier si les contrôleurs de texte sont null
   if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Veuillez remplir tous les champs')),
+      const SnackBar(content: Text('Veuillez remplir tous les champs'),
+        backgroundColor: Colors.red,
+      ),
     );
     return;
   }
@@ -196,6 +209,8 @@ Future<void> loginUser(BuildContext context) async {
 
     // Vérifier si le token est renvoyé
     final accessToken = response['accessToken'];
+    print('Access Token: $accessToken');
+       // print('Refresh Token: $refreshToken');
     if (accessToken != null) {
       await storage.write(key: 'token', value: accessToken);
 
@@ -206,6 +221,7 @@ Future<void> loginUser(BuildContext context) async {
       } else {
         await storage.delete(key: 'email');
         await storage.delete(key: 'password');
+        
       }
 
       _isLoggedIn = true; // Mettre à jour l'état de connexion
@@ -219,7 +235,8 @@ Future<void> loginUser(BuildContext context) async {
   } on Exception catch (e) {
     _errorMessage = e.toString();
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(_errorMessage)),
+      SnackBar(content: Text(_errorMessage),
+        backgroundColor: Colors.red,),
     );
   } finally {
     _isLoading = false;

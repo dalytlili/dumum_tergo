@@ -43,7 +43,37 @@ class CompleteProfileSellerView extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
+Text(
+              'Email',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            TextFormField(
+                      controller: viewModel.emailController,
 
+              decoration: InputDecoration(
+                hintText: 'Entrez le nom de votre Email',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            Text(
+              'Description',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            TextFormField(
+                      controller: viewModel.descriptionController,
+
+              decoration: InputDecoration(
+                hintText: 'Entrez la description de votre entreprise',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
             // Section Adresse
             Text(
               'Adresse',

@@ -51,14 +51,18 @@ class SellerLoginViewModel extends ChangeNotifier {
       final response = await _sendOtpRequest(fullPhoneNumber);
 
       // Vérifier la réponse
-      if (response.statusCode == 200) {
-        errorMessage = null;
-        return true;
-      } else {
-        final error = jsonDecode(response.body);
-        errorMessage = error['msg'] ?? "Erreur lors de l'envoi de l'OTP";
-        return true;
-      }
+ if (response.statusCode == 200) {
+  errorMessage = null;
+  return true;
+} else if (response.statusCode == 403) {
+  errorMessage = "Ton compte est banni";
+  return false;
+} else {
+  final error = jsonDecode(response.body);
+  errorMessage = error['msg'] ?? "Erreur lors de l'envoi de l'OTP";
+  return true;
+}
+
       //baaed badelha false el return eli floukha 
     } catch (e) {
       errorMessage = "Une erreur s'est produite : ${e.toString()}";

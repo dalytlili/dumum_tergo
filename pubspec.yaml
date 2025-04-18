@@ -42,7 +42,14 @@ dependencies:
   flutter_web_auth_2: ^4.1.0
   image_picker: ^1.1.2
   web_socket_channel: ^3.0.2
-  
+  jwt_decoder: ^2.0.1
+  intl: ^0.20.2
+  table_calendar: ^3.2.0
+  dropdown_search: ^6.0.2
+  email_validator: ^3.0.0
+  flutter_local_notifications: ^19.0.0
+  audioplayers: ^6.4.0
+  timeago: ^3.1.0
 
 dev_dependencies:
   flutter_test:
@@ -74,6 +81,6 @@ flutter:
     - assets/images/1024.png
     - assets/images/default.png
 
-
+    - assets/sounds/notification.mp3
 
     - assets/images/welcome_illustration.png

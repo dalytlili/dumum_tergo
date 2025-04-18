@@ -52,17 +52,46 @@
         <dict>
             <key>CFBundleURLSchemes</key>
             <array>
-                <string>dumumtergo</string> <!-- Le même schéma que pour Android -->
+                <string>dumumtergo</string> 
             </array>
         </dict>
     </array>
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>remote-notification</string>
+        <string>fetch</string>
+    </array>
+    <key>LSApplicationQueriesSchemes</key>
+    <array>
+        <string>tel</string>
+    </array>
+    <!-- Permissions pour les notifications -->
+    <key>NSUserNotificationAlertStyle</key>
+    <string>alert</string>
+    
+    <!-- Configuration pour Firebase (si utilisé) -->
+    <key>FirebaseAppDelegateProxyEnabled</key>
+    <false/>
+
+    <!-- Configuration WebSocket (si utilisé directement) -->
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsArbitraryLoads</key>
+        <true/>
+        <key>NSAllowsArbitraryLoadsInWebContent</key>
+        <true/>
+    </dict>
 
     <!-- Permissions pour image_picker -->
     <key>NSCameraUsageDescription</key>
-    <string>Nous avons besoin d'accéder à votre caméra pour prendre des photos.</string>
+    <string>Cette application nécessite l'accès à la caméra pour prendre des photos de profil et de voitures.</string>
     <key>NSPhotoLibraryUsageDescription</key>
-    <string>Nous avons besoin d'accéder à votre galerie pour sélectionner des photos.</string>
+    <string>Cette application nécessite l'accès à la galerie pour sélectionner des photos de profil et de voitures.</string>
     <key>NSMicrophoneUsageDescription</key>
-    <string>Nous avons besoin d'accéder à votre microphone pour enregistrer des vidéos.</string>
+    <string>Cette application nécessite l'accès au microphone pour l'enregistrement vidéo.</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Cette application nécessite l'accès à la localisation pour trouver les voitures à proximité.</string>
+    <key>NSLocationAlwaysUsageDescription</key>
+    <string>Cette application nécessite l'accès à la localisation en arrière-plan pour les notifications de proximité.</string>
 </dict>
 </plist>

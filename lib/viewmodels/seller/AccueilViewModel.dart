@@ -24,15 +24,15 @@ class AccueilViewModel extends ChangeNotifier {
   }
 
   try {
-    await _logoutService.logoutSeller(_token!); // Appel API logout
+    await _logoutService.logoutSeller(_token!);
   } catch (e) {
     debugPrint('Erreur lors de la déconnexion: $e');
     throw Exception('Erreur lors de la déconnexion: $e');
   }
 
   // Supprimer le token et le refreshToken depuis FlutterSecureStorage
-  //await _storage.delete(key: 'seller_token');
-  //await _storage.delete(key: 'refreshToken'); // Supprimer aussi le refreshToken si présent
+  await _storage.delete(key: 'seller_token');
+  await _storage.delete(key: 'refreshToken'); // Supprimer aussi le refreshToken si présent
 
   // Redirection après déconnexion
   Navigator.pushReplacementNamed(context, "/welcome");

@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:dumum_tergo/views/sign_in_screen.dart';
+import 'package:dumum_tergo/views/user/sign_in_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart'; // Ajoutez cette importation
@@ -78,38 +78,40 @@ Future<bool> verifyOTP(BuildContext context) async {
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       _accessToken = data['accessToken'];
-      debugPrint('Token reçu: $_accessToken'); // Log pour vérifier le token reçu
-        await storage.write(key: 'seller_token', value: accessToken); // Clé 'token'
-        await storage.write(key: '_id', value: _idvendor); // Clé 'token'
-        print('id vendeur: $_idvendor');
+      debugPrint('Token reçu: $_accessToken');
+      
+      await storage.write(key: 'seller_token', value: _accessToken);
+      await storage.write(key: '_id', value: _idvendor);
+      print('id vendeur: $_idvendor');
+      print('Tokens enregistrés avec succès');
 
-    
-        print('Tokens enregistrés avec succès');
-        print('Access Token: $accessToken');
-
-      debugPrint('Token stocké: $_accessToken'); // Log pour vérifier le token stocké
-
-      // Vérifier les conditions de redirection
       final bool profileCompleted = data['profileCompleted'] ?? false;
-      final String subscriptionStatus = data['subscription']['status'] ?? 'inactive';
+      final String subscriptionStatus = data['subscription']?['status'] ?? 'inactive';
 
       if (!profileCompleted) {
-              debugPrint('Token stocké......: $_accessToken'); // Log pour vérifier le token stocké
-
-        // Rediriger vers la page de complétion du profil
-        debugPrint('Profil non complété, redirection vers /complete_profile');
-        Navigator.pushReplacementNamed(context, '/complete_profile');
+        // Ferme toutes les pages et va à complete_profile
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/complete_profile',
+          (Route<dynamic> route) => false,
+        );
       } else if (profileCompleted && subscriptionStatus == 'active') {
-        // Rediriger vers la page d'accueil
-        debugPrint('Profil complété et abonnement actif, redirection vers /payment-success');
-        Navigator.pushReplacementNamed(context, '/payment-success');
+        // Ferme toutes les pages et va à payment-success
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/payment-success',
+          (Route<dynamic> route) => false,
+        );
       } else if (profileCompleted && subscriptionStatus != 'active') {
-        // Rediriger vers la page de paiement
-        debugPrint('Profil complété mais abonnement inactif, redirection vers /payment');
-        Navigator.pushReplacementNamed(context, '/PaymentView');
+        // Ferme toutes les pages et va à PaymentView
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/PaymentView',
+          (Route<dynamic> route) => false,
+        );
       }
 
-      return data['success'] ?? false;
+      return true;
     } else {
       debugPrint('Erreur lors de la vérification OTP: ${response.statusCode}');
       return false;

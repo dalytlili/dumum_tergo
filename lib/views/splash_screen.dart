@@ -1,11 +1,10 @@
 import 'dart:convert';
 
-import 'package:dumum_tergo/viewmodels/seller/otp_verification_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:provider/provider.dart'; // Importez Provider
 import '../constants/colors.dart';
-import '../viewmodels/SignInViewModel.dart'; // Importez votre ViewModel
+import '../viewmodels/user/SignInViewModel.dart'; // Importez votre ViewModel
 import 'package:http/http.dart' as http;
 
 class SplashScreen extends StatefulWidget {
@@ -62,7 +61,6 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
     final FlutterSecureStorage storage = const FlutterSecureStorage();
-
 Future<void> _checkAutoLogin(BuildContext context) async {
   await Future.delayed(const Duration(seconds: 2)); // Délai d'affichage du SplashScreen
 
@@ -70,11 +68,18 @@ Future<void> _checkAutoLogin(BuildContext context) async {
   String? sellerToken = await storage.read(key: 'seller_token'); // Token vendeur
   String? businessName = await storage.read(key: 'businessName'); // Nom de l'entreprise du vendeur
 
-  if (sellerToken != null && businessName != null) {
+  if (sellerToken != null ) {
     // Vérifier l'état du compte vendeur
-    final isSellerActive = await _checkSellerStatus(sellerToken);
+    Navigator.pushReplacementNamed(context, '/payment-success');
+    final sellerStatus = await _checkSellerStatus(sellerToken);
 
-    if (isSellerActive) {
+    if (sellerStatus['profileCompleted'] == false) {
+      // Rediriger vers la page de complétion du profil
+      Navigator.pushReplacementNamed(context, '/onboarding');
+      return;
+    }
+
+    if (sellerStatus['subscriptionStatus'] == 'active') {
       Navigator.pushReplacementNamed(context, '/payment-success'); // Redirection vendeur actif
       return;
     } else {
@@ -82,7 +87,7 @@ Future<void> _checkAutoLogin(BuildContext context) async {
       Navigator.pushReplacementNamed(context, '/PaymentView');
       return;
     }
-  } 
+  }
 
   if (userToken != null) {
     // Si le token utilisateur existe, vérifier l'authentification utilisateur
@@ -99,9 +104,9 @@ Future<void> _checkAutoLogin(BuildContext context) async {
   Navigator.pushReplacementNamed(context, '/onboarding');
 }
 
-Future<bool> _checkSellerStatus(String token) async {
+Future<Map<String, dynamic>> _checkSellerStatus(String token) async {
   final uri = Uri.parse('http://127.0.0.1:9098/api/vendor/profile');
-  
+
   try {
     final response = await http.get(
       uri,
@@ -113,17 +118,30 @@ Future<bool> _checkSellerStatus(String token) async {
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> responseData = json.decode(response.body);
-      String? status = responseData['data']?['subscription']?['status'];
+      final Map<String, dynamic> vendorData = responseData['data'];
 
-      if (status == 'active') {
-        return true;
-      }
+      // Vérifier si le profil est complété
+      final bool profileCompleted = vendorData['profileCompleted'] ?? false;
+
+      // Vérifier le statut de l'abonnement
+      final String subscriptionStatus = vendorData['subscription']?['status'] ?? 'inactive';
+
+      return {
+        'profileCompleted': profileCompleted,
+        'subscriptionStatus': subscriptionStatus,
+      };
     }
 
-    return false;
+    return {
+      'profileCompleted': false,
+      'subscriptionStatus': 'inactive',
+    };
   } catch (e) {
     debugPrint('Erreur lors de la vérification du statut du vendeur: $e');
-    return false;
+    return {
+      'profileCompleted': false,
+      'subscriptionStatus': 'inactive',
+    };
   }
 }
 

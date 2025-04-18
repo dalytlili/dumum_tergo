@@ -48,21 +48,26 @@ class PaymentViewModel with ChangeNotifier {
   }
 
   void _listenToWebSocket() {
-    _webSocketService.stream.listen((message) {
-      final data = json.decode(message);
-      if (data['event'] == 'payment_success') {
-        debugPrint('Paiement réussi pour le vendeur: ${data['vendorId']}');
-        debugPrint('ID de paiement: ${data['paymentId']}');
-        if (onPaymentSuccess != null) {
-         // onPaymentSuccess!(context);
-        }
+  debugPrint('Nouvelle connexion WebSocket'); // Affiche un message lors de la connexion
+
+  _webSocketService.stream.listen((message) {
+    final data = json.decode(message);
+    if (data['event'] == 'payment_success') {
+      debugPrint('ok'); // Affiche "ok" si le paiement est réussi
+      debugPrint('Paiement réussi pour le vendeur: ${data['vendorId']}');
+      debugPrint('ID de paiement: ${data['paymentId']}');
+      if (onPaymentSuccess != null) {
+        // onPaymentSuccess!(context);
       }
-    }, onError: (error) {
-      debugPrint('Erreur WebSocket: $error');
-    }, onDone: () {
-      debugPrint('Connexion WebSocket fermée');
-    });
-  }
+    } else {
+      debugPrint('no'); // Affiche "no" si l'événement n'est pas "payment_success"
+    }
+  }, onError: (error) {
+    debugPrint('Erreur WebSocket: $error');
+  }, onDone: () {
+    debugPrint('Connexion WebSocket fermée');
+  });
+}
 
   void selectPaymentMethod() {
     _paymentMethod = _paymentMethod.copyWith(isSelected: true);

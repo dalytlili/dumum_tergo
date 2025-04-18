@@ -9,6 +9,8 @@ class CompleteProfileSellerViewModel with ChangeNotifier {
   final TextEditingController imageUrlController = TextEditingController();
   final TextEditingController nameController = TextEditingController();
   final TextEditingController addressController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController descriptionController = TextEditingController();
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
@@ -32,6 +34,8 @@ String? _idvendor; // Ajouter cette ligne pour déclarer la variable
     var request = http.MultipartRequest('POST', uri)
       ..headers['Authorization'] = 'Bearer $token'
       ..fields['businessName'] = nameController.text
+            ..fields['email'] = emailController.text
+      ..fields['description'] = descriptionController.text
       ..fields['businessAddress'] = addressController.text;
  print('seller_token: $token');
     // Vérifier si une image a été sélectionnée et si elle existe

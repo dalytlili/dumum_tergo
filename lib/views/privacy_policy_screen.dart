@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../constants/colors.dart';
-import '../viewmodels/privacy_policy_viewmodel.dart';
+import '../viewmodels/user/privacy_policy_viewmodel.dart';
 
 class PrivacyPolicyScreen extends StatelessWidget {
   const PrivacyPolicyScreen({super.key});

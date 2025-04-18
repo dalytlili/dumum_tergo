@@ -1,6 +1,6 @@
 import 'package:dumum_tergo/constants/colors.dart';
 import 'package:dumum_tergo/viewmodels/seller/SellerLoginViewModel.dart';
-import 'package:dumum_tergo/views/otp_verification_screen.dart';
+import 'package:dumum_tergo/views/user/otp_verification_screen.dart';
 import 'package:dumum_tergo/views/seller/otp_verification_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:country_picker/country_picker.dart';

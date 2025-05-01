@@ -1,7 +1,7 @@
 import 'package:dumum_tergo/viewmodels/user/PasswordViewModel.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../constants/colors.dart';
+import '../../../constants/colors.dart';
 
 class SetPasswordScreen extends StatefulWidget {
   @override

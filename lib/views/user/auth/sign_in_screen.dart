@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:country_picker/country_picker.dart';
-import '../../viewmodels/user/SignInViewModel.dart';
-import '../../constants/colors.dart';
+import '../../../viewmodels/user/SignInViewModel.dart';
+import '../../../constants/colors.dart';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 

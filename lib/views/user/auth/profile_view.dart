@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:dumum_tergo/constants/colors.dart';
-import '../../viewmodels/user/profile_viewmodel.dart';
+import '../../../viewmodels/user/profile_viewmodel.dart';
 
 class ProfileView extends StatelessWidget {
   @override

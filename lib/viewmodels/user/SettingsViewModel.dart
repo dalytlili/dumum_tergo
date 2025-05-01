@@ -1,5 +1,5 @@
-import 'package:dumum_tergo/views/user/EditProfileView.dart';
-import 'package:dumum_tergo/views/user/sign_in_screen.dart';
+import 'package:dumum_tergo/views/user/auth/EditProfileView.dart';
+import 'package:dumum_tergo/views/user/auth/sign_in_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:dumum_tergo/viewmodels/user/EditProfileViewModel.dart'; // Importez le ViewModel de modification du profil

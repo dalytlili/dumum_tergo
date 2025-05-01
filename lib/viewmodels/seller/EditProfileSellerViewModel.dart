@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:country_picker/country_picker.dart';
-import 'package:dumum_tergo/views/seller/VerificationOtpChangeMobile.dart';
+import 'package:dumum_tergo/views/seller/auth/VerificationOtpChangeMobile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;

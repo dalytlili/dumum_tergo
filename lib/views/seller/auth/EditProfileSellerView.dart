@@ -2,7 +2,7 @@ import 'package:country_picker/country_picker.dart';
 import 'package:dumum_tergo/constants/colors.dart';
 import 'package:dumum_tergo/services/auth_service.dart';
 import 'package:dumum_tergo/services/logout_service.dart';
-import 'package:dumum_tergo/views/user/sign_in_screen.dart';
+import 'package:dumum_tergo/views/user/auth/sign_in_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:provider/provider.dart';

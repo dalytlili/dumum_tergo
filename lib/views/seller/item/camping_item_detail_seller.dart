@@ -1,25 +1,21 @@
-import 'dart:convert';
-
-import 'package:dumum_tergo/viewmodels/seller/camping_item_card_seller_viewmodel.dart';
 import 'package:dumum_tergo/views/user/car/full_screen_image_gallery.dart';
 import 'package:dumum_tergo/views/user/item/vendor_shop_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:dumum_tergo/models/camping_item.dart';
 
-class CampingItemDetailScreen extends StatefulWidget {
+class CampingItemDetailSellerScreen extends StatefulWidget {
   final CampingItem item;
   final bool fromShop; // Nouveau paramètre pour indiquer si on vient de la boutique
 
-  const CampingItemDetailScreen({Key? key, required this.item, this.fromShop = false,}) : super(key: key);
+  const CampingItemDetailSellerScreen({Key? key, required this.item, this.fromShop = false,}) : super(key: key);
 
   @override
-  State<CampingItemDetailScreen> createState() => _CampingItemDetailScreenState();
+  State<CampingItemDetailSellerScreen> createState() => _CampingItemDetailSellerScreenState();
 }
 
-class _CampingItemDetailScreenState extends State<CampingItemDetailScreen> {
+class _CampingItemDetailSellerScreenState extends State<CampingItemDetailSellerScreen> {
   int _currentImageIndex = 0;
 
   void _changeMainImage(int index) {
@@ -162,36 +158,7 @@ class _CampingItemDetailScreenState extends State<CampingItemDetailScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.item.name),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.favorite_border),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.share),
-            onPressed: () {},
-          ),
-          PopupMenuButton(
-            icon: const Icon(Icons.more_vert),
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'report',
-                child: Row(
-                  children: [
-                    Icon(Icons.report, color: Colors.red),
-                    SizedBox(width: 8),
-                    Text('Signaler'),
-                  ],
-                ),
-              ),
-            ],
-            onSelected: (value) {
-              if (value == 'report') {
-                _showReportDialog();
-              }
-            },
-          ),
-        ],
+    
       ),
       body: Column(
         children: [
@@ -361,10 +328,8 @@ class _CampingItemDetailScreenState extends State<CampingItemDetailScreen> {
                         ),
                       ],
                       const SizedBox(height: 24),
-                      _buildVendorRatingSection(),
-                      const SizedBox(height: 16),
-                      _buildReportSection(),
-                                            const SizedBox(height: 16),
+                 
+                    
 
                     ]),
                   ),
@@ -372,123 +337,9 @@ class _CampingItemDetailScreenState extends State<CampingItemDetailScreen> {
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            decoration: BoxDecoration(
-              color: surfaceColor,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 10,
-                  offset: const Offset(0, -5),
-                ),
-              ],
-              border: Border(
-                top: BorderSide(
-                  color: isDarkMode ? Colors.grey[800]! : Colors.grey[200]!,
-                  width: 1,
-                ),
-              ),
-            ),
-            child: Container(
-                  padding: const EdgeInsets.all(16),
-  decoration: BoxDecoration(
-          color: Colors.grey[100],
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey[300]!),
-        ),
-              child: Row(
-                
-                children: [
-                  CircleAvatar(
-                    radius: 24,
-                    backgroundColor: Colors.grey[200],
-                    backgroundImage: NetworkImage(
-                      'http://localhost:9098${widget.item.vendor.image ?? 'default.jpg'}',
-                    ),
-                    onBackgroundImageError: (_, __) {},
-                  ),
-                  const SizedBox(width: 20),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.item.vendor.businessName,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 17,
-                            color: onSurfaceColor,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                    // Remplacez cette partie dans le footer
-              Row(
-                children: [
-                  Icon(Icons.star, color: Colors.amber, size: 16),
-                  const SizedBox(width: 4),
-                  FutureBuilder<Map<String, dynamic>>(
-                    future: _fetchVendorRatings(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return Text(
-              'Chargement...',
-              style: TextStyle(
-                color: Colors.grey,
-                fontSize: 12,
-              ),
-                        );
-                      }
-                      
-                      if (snapshot.hasError) {
-                        return Text(
-              'Erreur de chargement',
-              style: TextStyle(
-                color: Colors.grey,
-                fontSize: 12,
-              ),
-                        );
-                      }
-                      
-                      final averageRating = snapshot.data?['averageRating'] ?? 0.0;
-                      final ratingCount = snapshot.data?['ratingCount'] ?? 0;
-                      
-                      return Text(
-                        '${averageRating.toStringAsFixed(1)} ($ratingCount avis)',
-                        style: TextStyle(
-              color: Colors.grey,
-              fontSize: 12,
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: primaryColor,
-                    ),
-                    child: IconButton(
-                      icon: const Icon(Icons.phone, color: Colors.white, size: 26),
-                      onPressed: () => _callVendor(context, widget.item.vendor.mobile),
-                    ),
-                  ),
-                ],
-                
-              ),
-            ),
-
-            
-          ),
-          
+    
         ],
-        
       ),
-      
     );
   }
 
@@ -591,272 +442,7 @@ class _CampingItemDetailScreenState extends State<CampingItemDetailScreen> {
       ],
     );
   }
-Widget _buildVendorRatingSection() {
-  int? userRating; // Pour stocker la note de l'utilisateur
-  bool isSubmitting = false; // Pour gérer l'état de soumission
-  bool isHovering = false; // Pour gérer l'état de survol
-
-  return Container(
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(16),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'À propos du vendeur',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            CircleAvatar(
-              radius: 30,
-              backgroundImage: NetworkImage(
-                'http://localhost:9098${widget.item.vendor.image ?? 'default.jpg'}',
-              ),
-              onBackgroundImageError: (_, __) {},
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.item.vendor.businessName,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Membre depuis 2023',
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        
-        // Affichage de la note moyenne et notation
-        FutureBuilder(
-  future: _fetchVendorRatings(),
-  builder: (context, snapshot) {
-    if (snapshot.connectionState == ConnectionState.waiting) {
-      return const CircularProgressIndicator();
-    }
-    
-    if (snapshot.hasError) {
-      return Text('Erreur: ${snapshot.error}');
-    }
-    
-    final ratingData = snapshot.data;
-    final averageRating = ratingData?['averageRating'] ?? 0.0;
-    final ratingCount = ratingData?['ratingCount'] ?? 0;
-    final hasUserRated = userRating != null;
-
-    return Column(
-      children: [
-        Row(
-          children: [
-           Row(
-  children: List.generate(5, (index) {
-    final displayRating = hasUserRated ? userRating! : averageRating.round();
-    
-    return MouseRegion(
-      onEnter: (_) => setState(() => isHovering = true),
-      onExit: (_) => setState(() => isHovering = false),
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque, // Important pour la zone cliquable
-        onTap: () async {
-          if (isSubmitting) return;
-          debugPrint('Star ${index + 1} tapped'); // Pour le débogage
-          
-          setState(() {
-            userRating = index + 1;
-            isSubmitting = true;
-          });
-
-          try {
-            await _submitRating(userRating!);
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Merci pour votre notation !')),
-            );
-          } catch (e) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Erreur: ${e.toString()}'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          } finally {
-            setState(() => isSubmitting = false);
-          }
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(4.0),
-          child: Icon(
-            index < displayRating ? Icons.star : Icons.star_border,
-            color: Colors.amber,
-            size: 28,
-          ),
-        ),
-      ),
-    );
-  }),
-),
-
-            const SizedBox(width: 8),
-            Text(
-              '${averageRating.toStringAsFixed(1)} ($ratingCount avis)',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        if (isSubmitting)
-          const Padding(
-            padding: EdgeInsets.only(top: 8),
-            child: Center(
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ),
-          ),
-      ],
-    );
-  },
-)
-,
-
-        const SizedBox(height: 12),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            OutlinedButton.icon(
-              icon: const Icon(Icons.chat, size: 18),
-              label: const Text('Message'),
-              onPressed: () {},
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.store, size: 18),
-              label: const Text('Voir la boutique'),
-              onPressed: () {
-                if (widget.fromShop) {
-                  Navigator.pop(context);
-                } else {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => VendorShopScreen(
-                        vendorId: widget.item.vendor.id,
-                      ),
-                    ),
-                  );
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
-    ),
-  );
-}
 
 
 
-
-Future<Map<String, dynamic>> _fetchVendorRatings() async {
-        final token = await storage.read(key: 'token');
-
-  final response = await http.get(
-    Uri.parse('http://127.0.0.1:9098/api/vendor/${widget.item.vendor.id}/ratings'),
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer $token', // Remplacez par votre token
-    },
-  );
-  
-  if (response.statusCode == 200) {
-    return jsonDecode(response.body);
-  } else {
-    throw Exception('Failed to load ratings');
-  }
-}
-
-Future<void> _submitRating(int rating) async {
-          final token = await storage.read(key: 'token');
-
-  final response = await http.post(
-    Uri.parse('http://127.0.0.1:9098/api/vendor/${widget.item.vendor.id}/ratings'),
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer $token', // Remplacez par votre token
-    },
-    body: jsonEncode({
-      'rating': rating,
-    }),
-  );
-  
-  if (response.statusCode != 200) {
-    throw Exception('Failed to submit rating');
-  }
-}
-
-  Widget _buildReportSection() {
-    return GestureDetector(
-      onTap: _showReportDialog,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.grey[100],
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey[300]!),
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.report, color: Colors.red[400]),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Text(
-                'Signaler cette publication',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-            Icon(Icons.chevron_right, color: Colors.grey[500]),
-          ],
-        ),
-      ),
-    );
-  }
 }

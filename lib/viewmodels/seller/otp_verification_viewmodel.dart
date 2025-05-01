@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:dumum_tergo/views/user/sign_in_screen.dart';
+import 'package:dumum_tergo/views/user/auth/sign_in_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart'; // Ajoutez cette importation

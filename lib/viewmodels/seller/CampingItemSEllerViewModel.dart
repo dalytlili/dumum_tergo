@@ -114,7 +114,19 @@ class CampingItemsSellerViewModel with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> refreshItems() async {
+Future<void> refreshItems() async {
+  _isLoading = true;
+  notifyListeners();
+  
+  try {
     await fetchCampingItems();
+  } catch (e) {
+    _error = 'Failed to refresh items: ${e.toString()}';
+    if (kDebugMode) print('Error refreshing items: $e');
+  } finally {
+    _isLoading = false;
+    notifyListeners();
   }
+}
+  
 }

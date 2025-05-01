@@ -1,5 +1,5 @@
 // filter_sheet.dart
-import 'package:dumum_tergo/views/seller/search-location.dart';
+import 'package:dumum_tergo/views/seller/car/search-location.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:dumum_tergo/viewmodels/user/camping_items_viewmodel.dart';

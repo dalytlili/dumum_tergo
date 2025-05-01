@@ -1,10 +1,10 @@
 import 'package:dumum_tergo/constants/colors.dart';
 import 'package:dumum_tergo/viewmodels/user/HomeViewModel.dart';
 import 'package:dumum_tergo/views/user/item/camping_items_screen.dart';
-import 'package:dumum_tergo/views/user/notifications_page.dart';
-import 'package:dumum_tergo/views/user/rental_search_view.dart';
+import 'package:dumum_tergo/views/user/car/notifications_page.dart';
+import 'package:dumum_tergo/views/user/car/rental_search_view.dart';
 import 'package:dumum_tergo/views/user/side_menu_view.dart';
-import 'package:dumum_tergo/views/user/profile_view.dart';
+import 'package:dumum_tergo/views/user/auth/profile_view.dart';
 import 'package:flutter/material.dart';
 import '../../services/notification_service_user.dart';
 import 'dart:async';

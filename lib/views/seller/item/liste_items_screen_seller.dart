@@ -1,9 +1,7 @@
 import 'package:dumum_tergo/constants/colors.dart';
 import 'package:dumum_tergo/viewmodels/seller/CampingItemSEllerViewModel.dart';
-import 'package:dumum_tergo/viewmodels/user/camping_items_viewmodel.dart';
 import 'package:dumum_tergo/views/seller/item/add-item-page.dart';
 import 'package:dumum_tergo/views/seller/item/camping_item_card_seller.dart';
-import 'package:dumum_tergo/views/user/item/camping_item_card.dart';
 import 'package:dumum_tergo/views/user/item/filter_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -73,21 +71,27 @@ class _CampingItemsScreenSellerState extends State<CampingItemsScreenSeller> {
       builder: (context) => const FilterSheet(),
     );
   }
- void _showAddCarDialog() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.9,
-        decoration: BoxDecoration(
-         color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: AddCampingItemPage(),
+void _showAddCarDialog() {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (context) => Container(
+      height: MediaQuery.of(context).size.height * 0.9,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-    );
-  }
+      child: AddCampingItemPage(
+        onItemAdded: () {
+          // Rafraîchir la liste après l'ajout
+          Provider.of<CampingItemsSellerViewModel>(context, listen: false)
+              .refreshItems();
+        },
+      ),
+    ),
+  );
+}
   @override
   Widget build(BuildContext context) {
     return Consumer<CampingItemsSellerViewModel>(
@@ -200,38 +204,61 @@ class _CampingItemsScreenSellerState extends State<CampingItemsScreenSeller> {
 
   Widget _buildContent(CampingItemsSellerViewModel viewModel) {
     return Padding(
-      padding: EdgeInsets.only(top: _isAtTop ? 72 + 0 : 0), // Ajustement avec la hauteur de l'AppBar
+      padding: EdgeInsets.only(top: _isAtTop ? 80 + 0 : 0), // Ajustement avec la hauteur de l'AppBar
       child: _buildContentList(viewModel),
     );
   }
 
-  Widget _buildContentList(CampingItemsSellerViewModel viewModel) {
-    if (viewModel.isLoading) return const Center(child: CircularProgressIndicator());
-    if (viewModel.error.isNotEmpty) return _buildErrorWidget(viewModel);
-    if (viewModel.filteredItems.isEmpty) return _buildEmptyWidget();
-    
-    return NotificationListener<ScrollNotification>(
-      onNotification: (notification) => true,
-      child: RefreshIndicator(
-        onRefresh: () => viewModel.refreshItems(),
-        child: GridView.builder(
-          controller: _scrollController,
-          padding: const EdgeInsets.all(12),
-          itemCount: viewModel.filteredItems.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 0.52,
-          ),
-          itemBuilder: (context, index) {
-            final item = viewModel.filteredItems[index];
-            return CampingItemCardSeller(item: item);
-          },
-        ),
-      ),
-    );
+Widget _buildContentList(CampingItemsSellerViewModel viewModel) {
+  if (viewModel.isLoading && viewModel.filteredItems.isEmpty) {
+    return const Center(child: CircularProgressIndicator());
   }
+  if (viewModel.error.isNotEmpty) return _buildErrorWidget(viewModel);
+  
+  return RefreshIndicator(
+    onRefresh: () => viewModel.refreshItems(),
+    child: CustomScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      controller: _scrollController,
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.all(12),
+          sliver: SliverToBoxAdapter(
+            child: viewModel.filteredItems.isEmpty 
+                ? SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.7, // Réduit un peu pour compenser le padding
+                    child: _buildEmptyWidget(),
+                  )
+                : Container(),
+          ),
+        ),
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          sliver: SliverGrid(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 0.52,
+            ),
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                final item = viewModel.filteredItems[index];
+                return CampingItemCardSeller(
+                  item: item, 
+                  onDelete: () => viewModel.refreshItems(),
+                );
+              },
+              childCount: viewModel.filteredItems.length,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+
 
   Widget _buildErrorWidget(CampingItemsSellerViewModel viewModel) {
     return Center(

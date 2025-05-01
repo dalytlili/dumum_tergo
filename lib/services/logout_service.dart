@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:dumum_tergo/views/user/sign_in_screen.dart';
+import 'package:dumum_tergo/views/user/auth/sign_in_screen.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 

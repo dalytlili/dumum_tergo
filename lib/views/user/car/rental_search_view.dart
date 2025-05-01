@@ -1,10 +1,10 @@
-import 'package:dumum_tergo/views/user/result_search_view.dart';
+import 'package:dumum_tergo/views/user/car/result_search_view.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:dumum_tergo/constants/colors.dart';
 import 'package:dumum_tergo/viewmodels/user/rental_search_viewmodel.dart';
-import 'package:dumum_tergo/views/user/rental_calendar_view.dart';
-import 'package:dumum_tergo/views/user/search_location_page.dart';
+import 'package:dumum_tergo/views/user/car/rental_calendar_view.dart';
+import 'package:dumum_tergo/views/user/car/search_location_page.dart';
 
 class RentalSearchView extends StatelessWidget {
   const RentalSearchView({Key? key}) : super(key: key);

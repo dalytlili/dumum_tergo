@@ -1,8 +1,8 @@
-import 'package:dumum_tergo/views/user/otp_verification_screen.dart';
+import 'package:dumum_tergo/views/user/auth/otp_verification_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:country_picker/country_picker.dart';
-import '../../viewmodels/user/forgot_password_viewmodel.dart';
-import '../../constants/colors.dart';
+import '../../../viewmodels/user/forgot_password_viewmodel.dart';
+import '../../../constants/colors.dart';
 import 'package:provider/provider.dart';
 
 class ForgotPasswordView extends StatefulWidget {

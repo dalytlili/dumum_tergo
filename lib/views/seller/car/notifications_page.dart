@@ -1,29 +1,27 @@
 import 'package:dumum_tergo/constants/colors.dart';
-import 'package:dumum_tergo/views/seller/car-reservations-page.dart';
-import 'package:dumum_tergo/views/user/reservation_page.dart';
+import 'package:dumum_tergo/views/seller/car/car-reservations-page.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:timeago/timeago.dart' as timeago;
+import 'reservation_detail_page.dart';
 
-class NotificationsUserPage extends StatefulWidget {
+class NotificationsPage extends StatefulWidget {
   final VoidCallback? onNotificationsRead;
   final VoidCallback? onBack;
-  final ValueChanged<int>? onUnreadCountChanged;
-
-  const NotificationsUserPage({
+  
+  const NotificationsPage({
     Key? key,
     this.onNotificationsRead,
     this.onBack,
-    this.onUnreadCountChanged,
   }) : super(key: key);
 
   @override
-  State<NotificationsUserPage> createState() => _NotificationsUserPageState();
+  State<NotificationsPage> createState() => _NotificationsPageState();
 }
 
-class _NotificationsUserPageState extends State<NotificationsUserPage> {
+class _NotificationsPageState extends State<NotificationsPage> {
   final FlutterSecureStorage storage = FlutterSecureStorage();
   final ScrollController _scrollController = ScrollController();
 
@@ -59,14 +57,14 @@ class _NotificationsUserPageState extends State<NotificationsUserPage> {
     });
 
     try {
-      String? token = await storage.read(key: 'token');
+      String? token = await storage.read(key: 'seller_token');
 
       if (token == null) {
         throw Exception('Token non trouvé');
       }
 
       final response = await http.get(
-        Uri.parse('http://127.0.0.1:9098/api/notifications/user'),
+        Uri.parse('http://127.0.0.1:9098/api/notifications/vendor'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -80,12 +78,9 @@ class _NotificationsUserPageState extends State<NotificationsUserPage> {
           _isLoading = false;
           _hasNewNotifications = _notifications.any((n) => n['readAt'] == null);
           
+          // Appeler le callback si des notifications non lues existent
           if (_hasNewNotifications && widget.onNotificationsRead != null) {
             widget.onNotificationsRead!();
-          }
-
-          if (widget.onUnreadCountChanged != null) {
-            widget.onUnreadCountChanged!(_notifications.where((n) => n['readAt'] == null).length);
           }
         });
       } else {
@@ -208,7 +203,7 @@ class _NotificationsUserPageState extends State<NotificationsUserPage> {
   }
 
   Widget _buildNotificationItem(Map<String, dynamic> notification) {
-    final readStatus = notification['read'];
+    final isUnread = notification['read'] ;
     final data = notification['data'] ?? {};
     final car = data['car'] ?? {};
     final user = data['user'] ?? {};
@@ -216,55 +211,80 @@ class _NotificationsUserPageState extends State<NotificationsUserPage> {
         ? DateTime.parse(notification['createdAt']) 
         : DateTime.now();
 
+    // Récupérer l'image de l'utilisateur avec l'URL complète
     final userImage = user['image'] != null
         ? "http://127.0.0.1:9098${user['image']}"
         : null;
 
     return InkWell(
-      onTap: () async {
-        try {
-          String? token = await storage.read(key: 'token');
-          if (token == null) throw Exception('Token non trouvé');
+     onTap: () async {
+  // Marquer comme lu via l'API
+  try {
+    String? token = await storage.read(key: 'seller_token');
+    if (token == null) {
+      throw Exception('Token non trouvé');
+    }
 
-          // Marquer la notification comme lue si elle ne l'est pas déjà
-          if (readStatus == false) {
-            final response = await http.put(
-              Uri.parse('http://127.0.0.1:9098/api/notifications/user/${notification['_id']}/read'),
-              headers: {
-                'Authorization': 'Bearer $token',
-                'Content-Type': 'application/json',
-              },
-            );
-
-            if (response.statusCode == 200) {
-              setState(() {
-                notification['read'] = true;
-              });
-            }
-          }
-
-          // Naviguer vers la page des réservations dans tous les cas
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ReservationPage(authToken: token),
-            ),
-          );
-        } catch (e) {
-          print('Erreur lors du marquage de la notification comme lue: $e');
-        }
+    final response = await http.put(
+      Uri.parse('http://127.0.0.1:9098/api/notifications/vendor/${notification['_id']}/read'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
       },
+    );
 
+    if (response.statusCode == 200) {
+      // Mettre à jour l'état local
+      setState(() {
+        notification['readAt'] = DateTime.now().toIso8601String();
+      });
+    }
+  } catch (e) {
+    print('Erreur lors du marquage de la notification comme lue: $e');
+  }
+  
+  if (notification['type'] == 'new_reservation') {
+    final reservationData = notification['data'];
+    
+    // Naviguer vers la page de liste avec filtre sur cette réservation
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CarReservationsPage(
+          onReservationSelected: (reservation) {
+            // Naviguer vers les détails
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ReservationDetailPage(
+                  reservation: reservation,
+                  onBack: () {
+                    // Retourner à la page d'accueil
+                    Navigator.of(context).popUntil((route) => route.isFirst);
+                  },
+                ),
+              ),
+            );
+          },
+          initialReservationId: data['reservationId'],
+        ),
+      ),
+    );
+  }
+},
       child: Container(
-        color: readStatus == false ? AppColors.primary.withOpacity(0.05) : Colors.transparent,
+        color: !isUnread ? AppColors.primary.withOpacity(0.05) : Colors.transparent,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Remplacer le container avec icône par un CircleAvatar avec l'image utilisateur
             CircleAvatar(
               radius: 24,
               backgroundColor: _getNotificationColor(notification['type']).withOpacity(0.2),
-              backgroundImage: userImage != null ? NetworkImage(userImage) : null,
+              backgroundImage: userImage != null 
+                  ? NetworkImage(userImage) 
+                  : null,
               child: userImage == null
                   ? Icon(
                       _getNotificationIcon(notification['type']),
@@ -285,12 +305,12 @@ class _NotificationsUserPageState extends State<NotificationsUserPage> {
                           _getNotificationTitle(notification['type']),
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
-                            color: readStatus ? Colors.black : Colors.grey[700],
+                            color: isUnread ? Colors.black : Colors.grey[700],
                             fontSize: 15,
                           ),
                         ),
                       ),
-                      if (readStatus == false)
+                      if (isUnread == false)
                         Container(
                           width: 8,
                           height: 8,
@@ -359,13 +379,14 @@ class _NotificationsUserPageState extends State<NotificationsUserPage> {
     );
   }
 
+
   Color _getNotificationColor(String? type) {
     switch (type) {
       case 'reservation_request':
         return Colors.blue;
-      case 'reservation_accepted':
+      case 'reservation_confirmed':
         return Colors.green;
-      case 'reservation_rejected':
+      case 'reservation_cancelled':
         return Colors.red;
       case 'payment_received':
         return Colors.purple;
@@ -378,9 +399,9 @@ class _NotificationsUserPageState extends State<NotificationsUserPage> {
     switch (type) {
       case 'reservation_request':
         return Icons.car_rental;
-      case 'reservation_accepted':
+      case 'reservation_confirmed':
         return Icons.check_circle;
-      case 'reservation_rejected':
+      case 'reservation_cancelled':
         return Icons.cancel;
       case 'payment_received':
         return Icons.payment;
@@ -393,9 +414,9 @@ class _NotificationsUserPageState extends State<NotificationsUserPage> {
     switch (type) {
       case 'reservation_request':
         return 'Nouvelle demande de réservation';
-      case 'reservation_accepted':
+      case 'reservation_confirmed':
         return 'Réservation confirmée';
-      case 'reservation_rejected':
+      case 'reservation_cancelled':
         return 'Réservation annulée';
       case 'payment_received':
         return 'Paiement reçu';
@@ -411,112 +432,5 @@ class _NotificationsUserPageState extends State<NotificationsUserPage> {
     } catch (e) {
       return dateString;
     }
-  }
-}
-
-class HomeView extends StatefulWidget {
-  const HomeView({Key? key}) : super(key: key);
-
-  @override
-  _HomeViewState createState() => _HomeViewState();
-}
-
-class _HomeViewState extends State<HomeView> {
-  int _currentIndex = 0;
-  int _unreadNotifications = 0; // Nombre de notifications non lues
-
-  final List<Widget> _screens = [
-    const Placeholder(),
-    const Placeholder(),
-    const Placeholder(),
-    const Placeholder(),
-    const Placeholder(),
-  ];
-
-  final List<String> _appBarTitles = [
-    'Accueil',
-    'Rechercher une voiture',
-    'Marketplace',
-    'Événement',
-    'Profil',
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_appBarTitles[_currentIndex]),
-        actions: [
-          Stack(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.notifications),
-                onPressed: () async {
-                  // Naviguer vers la page des notifications
-                  await Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => NotificationsUserPage(
-                        onNotificationsRead: () {
-                          setState(() {
-                            _unreadNotifications = 0;
-                          });
-                        },
-                        onUnreadCountChanged: (count) {
-                          // Mettre à jour le badge dynamiquement
-                          setState(() {
-                            _unreadNotifications = count;
-                          });
-                        },
-                      ),
-                    ),
-                  );
-                },
-              ),
-              if (_unreadNotifications > 0)
-                Positioned(
-                  right: 8,
-                  top: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    constraints: const BoxConstraints(
-                      minWidth: 16,
-                      minHeight: 16,
-                    ),
-                    child: Text(
-                      '$_unreadNotifications',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ],
-      ),
-      body: _screens[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Accueil'),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Rechercher'),
-          BottomNavigationBarItem(icon: Icon(Icons.store), label: 'Marketplace'),
-          BottomNavigationBarItem(icon: Icon(Icons.event), label: 'Événement'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
-        ],
-      ),
-    );
   }
 }

@@ -1,5 +1,5 @@
-import 'package:dumum_tergo/views/user/full_screen_image_gallery.dart';
-import 'package:dumum_tergo/views/user/responsibility_page.dart';
+import 'package:dumum_tergo/views/user/car/full_screen_image_gallery.dart';
+import 'package:dumum_tergo/views/user/car/responsibility_page.dart';
 import 'package:flutter/material.dart';
 import 'package:dumum_tergo/constants/colors.dart';
 

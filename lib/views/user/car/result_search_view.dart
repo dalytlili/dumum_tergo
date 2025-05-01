@@ -1,5 +1,5 @@
 import 'package:dumum_tergo/constants/colors.dart';
-import 'package:dumum_tergo/views/user/car_reservation_details.dart';
+import 'package:dumum_tergo/views/user/car/car_reservation_details.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:dumum_tergo/viewmodels/user/result_search_viewmodel.dart';

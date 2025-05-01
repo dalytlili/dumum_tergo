@@ -1,6 +1,6 @@
 import 'package:dumum_tergo/constants/colors.dart';
 import 'package:dumum_tergo/viewmodels/seller/liste_car_viewmodel.dart';
-import 'package:dumum_tergo/views/seller/add-car-rental-page.dart';
+import 'package:dumum_tergo/views/seller/car/add-car-rental-page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

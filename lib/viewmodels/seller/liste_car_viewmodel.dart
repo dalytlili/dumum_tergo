@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:dumum_tergo/views/user/sign_in_screen.dart'; // Vérifier si ce fichier est nécessaire
+import 'package:dumum_tergo/views/user/auth/sign_in_screen.dart'; // Vérifier si ce fichier est nécessaire
 
 class ListeCarViewModel with ChangeNotifier {
   List<dynamic> _searchResults = [];

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:country_picker/country_picker.dart';
-import '../../constants/colors.dart';
-import '../../viewmodels/user/sign_up_viewmodel.dart';
+import '../../../constants/colors.dart';
+import '../../../viewmodels/user/sign_up_viewmodel.dart';
 import 'package:flutter/gestures.dart';
 
 class SignUpScreen extends StatelessWidget {

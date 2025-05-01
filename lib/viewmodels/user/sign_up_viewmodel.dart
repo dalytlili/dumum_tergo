@@ -1,6 +1,6 @@
 import 'package:country_picker/country_picker.dart';
 import 'package:dumum_tergo/main.dart';
-import 'package:dumum_tergo/views/user/sign_in_screen.dart';
+import 'package:dumum_tergo/views/user/auth/sign_in_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import '../../services/auth_service.dart'; // Importer le service

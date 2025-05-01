@@ -1,5 +1,5 @@
 import 'package:dumum_tergo/constants/colors.dart';
-import 'package:dumum_tergo/views/user/confirmation_page.dart';
+import 'package:dumum_tergo/views/user/car/confirmation_page.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';

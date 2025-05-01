@@ -1,6 +1,6 @@
 import 'package:country_picker/country_picker.dart';
 import 'package:dumum_tergo/services/reservation_service.dart';
-import 'package:dumum_tergo/views/user/reservation_success_page.dart';
+import 'package:dumum_tergo/views/user/car/reservation_success_page.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:dumum_tergo/constants/colors.dart';

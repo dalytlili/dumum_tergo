@@ -1,7 +1,7 @@
-import 'package:dumum_tergo/views/user/set_password_screen.dart';
+import 'package:dumum_tergo/views/user/auth/set_password_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../viewmodels/user/otp_verification_viewmodel.dart';
+import '../../../viewmodels/user/otp_verification_viewmodel.dart';
 
 class OtpVerificationScreen extends StatelessWidget {
   final String phoneNumber;

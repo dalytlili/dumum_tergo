@@ -64,7 +64,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
       }
 
       final response = await http.get(
-        Uri.parse('http://127.0.0.1:9098/api/notifications/vendor'),
+        Uri.parse('https://dumum-tergo-backend.onrender.com/api/notifications/vendor'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -211,10 +211,11 @@ class _NotificationsPageState extends State<NotificationsPage> {
         ? DateTime.parse(notification['createdAt']) 
         : DateTime.now();
 
-    // Récupérer l'image de l'utilisateur avec l'URL complète
-    final userImage = user['image'] != null
-        ? "http://127.0.0.1:9098${user['image']}"
-        : null;
+  final userImage = user['image'] != null
+    ? (user['image'].toString().startsWith('https')
+        ? user['image']
+        : "https://res.cloudinary.com/dcs2edizr/image/upload/${user['image']}")
+    : null;
 
     return InkWell(
      onTap: () async {
@@ -226,7 +227,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
     }
 
     final response = await http.put(
-      Uri.parse('http://127.0.0.1:9098/api/notifications/vendor/${notification['_id']}/read'),
+      Uri.parse('https://dumum-tergo-backend.onrender.com/api/notifications/vendor/${notification['_id']}/read'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -302,10 +303,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
                     children: [
                       Expanded(
                         child: Text(
-                          _getNotificationTitle(notification['type']),
+                         _getNotificationTitle(notification['type']),
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
-                            color: isUnread ? Colors.black : Colors.grey[700],
+                            color: isUnread ? AppColors.primary : Colors.grey[700],
                             fontSize: 15,
                           ),
                         ),

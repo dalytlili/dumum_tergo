@@ -105,7 +105,7 @@ Future<void> _checkAutoLogin(BuildContext context) async {
 }
 
 Future<Map<String, dynamic>> _checkSellerStatus(String token) async {
-  final uri = Uri.parse('http://127.0.0.1:9098/api/vendor/profile');
+  final uri = Uri.parse('https://dumum-tergo-backend.onrender.com/api/vendor/profile');
 
   try {
     final response = await http.get(

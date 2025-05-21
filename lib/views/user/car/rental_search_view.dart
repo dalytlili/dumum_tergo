@@ -16,7 +16,7 @@ class RentalSearchView extends StatelessWidget {
       child: Scaffold(
         body: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Consumer<RentalSearchViewModel>( // Ajoutez ce Consumer
+          child: Consumer<RentalSearchViewModel>(
             builder: (context, viewModel, child) {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -27,20 +27,19 @@ class RentalSearchView extends StatelessWidget {
                   const SizedBox(height: 35),
                   const _DateSection(),
                   const SizedBox(height: 16),
-                 // const _DriverAgeSection(),
+                  // const _DriverAgeSection(),
                   const Spacer(),
-                  _buildSearchButton(context, viewModel), 
+                  _buildSearchButton(context, viewModel),
                 ],
               );
             },
           ),
         ),
-        
       ),
     );
   }
 
-Widget _buildSearchButton(BuildContext context, RentalSearchViewModel viewModel) {
+  Widget _buildSearchButton(BuildContext context, RentalSearchViewModel viewModel) {
   return SizedBox(
     width: double.infinity,
     child: ElevatedButton(
@@ -51,38 +50,62 @@ Widget _buildSearchButton(BuildContext context, RentalSearchViewModel viewModel)
           borderRadius: BorderRadius.circular(12),
         ),
       ),
- onPressed: () async {
-  await viewModel.search();
-  try {
-    if (viewModel.searchResults.isNotEmpty) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ResultSearchView(
-            initialResults: viewModel.searchResults,
-            pickupLocation: viewModel.pickupLocation,
-            pickupDate: viewModel.pickupDate,
-            returnDate: viewModel.returnDate,
-          ),
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Aucun résultat trouvé')),
-      );
-    }
-  } catch (e) {
-    print('Erreur de navigation: $e');
-  }
-},
-      child: const Text(
-        'Rechercher',
-        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-      ),
+      onPressed: viewModel.isLoading
+          ? null
+          : () async {
+              // Valider le formulaire avant de continuer
+              viewModel.validateForm();
+              
+              if (viewModel.pickupLocation.isEmpty) {
+                return; // Ne pas continuer si validation échoue
+              }
+
+              viewModel.setLoading(true);
+              await viewModel.search();
+              viewModel.setLoading(false);
+
+              if (viewModel.searchResults.isNotEmpty) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ResultSearchView(
+                      initialResults: viewModel.searchResults,
+                      pickupLocation: viewModel.pickupLocation,
+                      pickupDate: viewModel.pickupDate,
+                      returnDate: viewModel.returnDate,
+                    ),
+                  ),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Aucun résultat trouvé'),
+                  ),
+                );
+              }
+            },
+      child: viewModel.isLoading
+          ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 2,
+              ),
+            )
+          : const Text(
+              'Rechercher',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
     ),
   );
 }
 }
+
 class _SearchHeader extends StatelessWidget {
   const _SearchHeader({Key? key}) : super(key: key);
 
@@ -103,11 +126,9 @@ class _SearchHeader extends StatelessWidget {
           style: Theme.of(context).textTheme.bodyMedium,
         ),
       ],
-      
     );
   }
 }
-
 
 class _LocationSection extends StatefulWidget {
   const _LocationSection({Key? key}) : super(key: key);
@@ -117,23 +138,22 @@ class _LocationSection extends StatefulWidget {
 }
 
 class _LocationSectionState extends State<_LocationSection> {
-void _openSearchPage() async {
-  final result = await Navigator.of(context, rootNavigator: true).push<String>(
-    MaterialPageRoute(
-      builder: (context) => SearchLocationPage(),
-      fullscreenDialog: true,
-    ),
-  );
-
-  if (result != null && result.isNotEmpty) {
-    final parentViewModel = Provider.of<RentalSearchViewModel>(
-      context, 
-      listen: false
+  void _openSearchPage() async {
+    final result = await Navigator.of(context, rootNavigator: true).push<String>(
+      MaterialPageRoute(
+        builder: (context) => SearchLocationPage(),
+        fullscreenDialog: true,
+      ),
     );
-    parentViewModel.setPickupLocation(result);
-    print('Location updated: $result');
+
+    if (result != null && result.isNotEmpty) {
+      final parentViewModel = Provider.of<RentalSearchViewModel>(
+        context,
+        listen: false,
+      );
+      parentViewModel.setPickupLocation(result);
+    }
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -150,10 +170,14 @@ void _openSearchPage() async {
         GestureDetector(
           onTap: _openSearchPage,
           child: Container(
-                  padding: const EdgeInsets.all(17),
+            padding: const EdgeInsets.all(17),
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300),
-                    borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: viewModel.showLocationError 
+                    ? Colors.red 
+                    : Colors.grey.shade300,
+              ),
+              borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
               children: [
@@ -161,21 +185,37 @@ void _openSearchPage() async {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    viewModel.pickupLocation.isNotEmpty 
+                    viewModel.pickupLocation.isNotEmpty
                         ? viewModel.pickupLocation
                         : 'Entrez une ville, un aéroport...',
                     style: const TextStyle(fontSize: 16),
                   ),
                 ),
+                if (viewModel.showLocationError)
+                  const Icon(
+                    Icons.error,
+                    color: Colors.red,
+                    size: 16,
+                  ),
               ],
             ),
           ),
         ),
+        if (viewModel.showLocationError)
+          const Padding(
+            padding: EdgeInsets.only(top: 4.0),
+            child: Text(
+              'Ce champ est obligatoire',
+              style: TextStyle(
+                color: Colors.red,
+                fontSize: 12,
+              ),
+            ),
+          ),
       ],
     );
   }
 }
-
 class _DateSection extends StatefulWidget {
   const _DateSection({Key? key}) : super(key: key);
 
@@ -185,59 +225,80 @@ class _DateSection extends StatefulWidget {
 
 class _DateSectionState extends State<_DateSection> {
   void _showCalendar(BuildContext context, bool isStartDate) {
-  final viewModel = Provider.of<RentalSearchViewModel>(context, listen: false);
-  
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    builder: (context) {
-      return RentalCalendarView(
-        
-        onPeriodSelected: (startDateTime, endDateTime) {
-          viewModel.setPickupDate(startDateTime);
-          viewModel.setReturnDate(endDateTime);
-          Navigator.pop(context);
-        },
-      );
-    },
-  );
-}
+    final viewModel =
+        Provider.of<RentalSearchViewModel>(context, listen: false);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return RentalCalendarView(
+          onPeriodSelected: (startDateTime, endDateTime) {
+            viewModel.setPickupDate(startDateTime);
+            viewModel.setReturnDate(endDateTime);
+            Navigator.pop(context);
+          },
+        );
+      },
+    );
+  }
 
   String _formatDayOfWeek(DateTime date) {
     switch (date.weekday) {
-      case 1: return 'lun.';
-      case 2: return 'mar.';
-      case 3: return 'mer.';
-      case 4: return 'jeu.';
-      case 5: return 'ven.';
-      case 6: return 'sam.';
-      case 7: return 'dim.';
-      default: return '';
+      case 1:
+        return 'lun.';
+      case 2:
+        return 'mar.';
+      case 3:
+        return 'mer.';
+      case 4:
+        return 'jeu.';
+      case 5:
+        return 'ven.';
+      case 6:
+        return 'sam.';
+      case 7:
+        return 'dim.';
+      default:
+        return '';
     }
   }
 
   String _formatMonth(DateTime date) {
     switch (date.month) {
-      case 1: return 'janvier';
-      case 2: return 'février';
-      case 3: return 'mars';
-      case 4: return 'avril';
-      case 5: return 'mai';
-      case 6: return 'juin';
-      case 7: return 'juillet';
-      case 8: return 'août';
-      case 9: return 'septembre';
-      case 10: return 'octobre';
-      case 11: return 'novembre';
-      case 12: return 'décembre';
-      default: return '';
+      case 1:
+        return 'janvier';
+      case 2:
+        return 'février';
+      case 3:
+        return 'mars';
+      case 4:
+        return 'avril';
+      case 5:
+        return 'mai';
+      case 6:
+        return 'juin';
+      case 7:
+        return 'juillet';
+      case 8:
+        return 'août';
+      case 9:
+        return 'septembre';
+      case 10:
+        return 'octobre';
+      case 11:
+        return 'novembre';
+      case 12:
+        return 'décembre';
+      default:
+        return '';
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final viewModel = Provider.of<RentalSearchViewModel>(context);
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -250,11 +311,13 @@ class _DateSectionState extends State<_DateSection> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Expanded(
-            child: _buildDateSelector(context, 'Départ', viewModel.pickupDate, true),
+              child: _buildDateSelector(
+                  context, 'Départ', viewModel.pickupDate, true),
             ),
             const SizedBox(width: 30),
             Expanded(
-            child: _buildDateSelector(context, 'Retour', viewModel.returnDate, false),
+              child: _buildDateSelector(
+                  context, 'Retour', viewModel.returnDate, false),
             ),
           ],
         ),
@@ -262,88 +325,82 @@ class _DateSectionState extends State<_DateSection> {
     );
   }
 
-  Widget _buildDateSelector(BuildContext context, String label, DateTime date, bool isStartDate) {
-  final viewModel = Provider.of<RentalSearchViewModel>(context);
-  final displayDate = isStartDate ? viewModel.pickupDate : viewModel.returnDate;
+  Widget _buildDateSelector(
+      BuildContext context, String label, DateTime date, bool isStartDate) {
+    final viewModel = Provider.of<RentalSearchViewModel>(context);
+    final displayDate = isStartDate ? viewModel.pickupDate : viewModel.returnDate;
 
-  return GestureDetector(
-    onTap: () => _showCalendar(context, isStartDate),
-    child: Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-               border: Border.all(color: Colors.grey.shade300),
-                    borderRadius: BorderRadius.circular(8),
-        //color: Colors.transparent,
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 14,
-             // color: Colors.black,
+    return GestureDetector(
+      onTap: () => _showCalendar(context, isStartDate),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey.shade300),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 14,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                displayDate.day.toString().padLeft(2, '0'),
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                 // color: Colors.black,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _formatDayOfWeek(displayDate),
-                    style: const TextStyle(
-                      fontSize: 14,
-                     // color: Colors.black,
-                    ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  displayDate.day.toString().padLeft(2, '0'),
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
                   ),
-                  Text(
-                    _formatMonth(displayDate),
-                    style: const TextStyle(
-                      fontSize: 14,
-                      //color: Colors.black,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.access_time,
-                size: 16,
-                color: AppColors.primary,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '${displayDate.hour.toString().padLeft(2, '0')}:${displayDate.minute.toString().padLeft(2, '0')}',
-                style: const TextStyle(
-                  fontSize: 14,
-                  //color: Colors.black,
                 ),
-              ),
-            ],
-          ),
-        ],
+                const SizedBox(width: 8),
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _formatDayOfWeek(displayDate),
+                      style: const TextStyle(
+                        fontSize: 14,
+                      ),
+                    ),
+                    Text(
+                      _formatMonth(displayDate),
+                      style: const TextStyle(
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.access_time,
+                  size: 16,
+                  color: AppColors.primary,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '${displayDate.hour.toString().padLeft(2, '0')}:${displayDate.minute.toString().padLeft(2, '0')}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 }
-}
-

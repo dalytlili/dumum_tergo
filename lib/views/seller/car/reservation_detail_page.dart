@@ -5,8 +5,11 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:dumum_tergo/constants/colors.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-class ReservationDetailPage extends StatelessWidget {
+class ReservationDetailPage extends StatefulWidget {
   final Map<String, dynamic> reservation;
   final VoidCallback onBack;
 
@@ -17,37 +20,48 @@ class ReservationDetailPage extends StatelessWidget {
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    const String baseUrl = "http://127.0.0.1:9098/images/";
-    final theme = Theme.of(context);
+  _ReservationDetailPageState createState() => _ReservationDetailPageState();
+}
 
-    List<String> carImages = (reservation['car']['images'] is List)
-        ? (reservation['car']['images'] as List)
+class _ReservationDetailPageState extends State<ReservationDetailPage> {
+  bool _isUpdatingStatus = false;
+  final FlutterSecureStorage storage = const FlutterSecureStorage();
+
+  @override
+  Widget build(BuildContext context) {
+    const String baseUrl = "https://res.cloudinary.com/dcs2edizr/image/upload/";
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
+    List<String> carImages = (widget.reservation['car']['images'] is List)
+        ? (widget.reservation['car']['images'] as List)
             .map((image) => "$baseUrl$image")
             .toList()
         : [];
 
     return Scaffold(
-      
-      backgroundColor: Colors.grey[50],
-    appBar: AppBar(
-      title: Text(
-        'Détails de réservation',
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
+      backgroundColor: isDarkMode ? Colors.grey[900] : Colors.grey[50],
+      appBar: AppBar(
+        title: Text(
+          'Détails de réservation',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: isDarkMode ? Colors.white : Colors.black,
+          ),
+        ),
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: isDarkMode ? Colors.grey[900] : Colors.white,
+        foregroundColor: isDarkMode ? Colors.white : Colors.black,
+        systemOverlayStyle: isDarkMode 
+            ? SystemUiOverlayStyle.light 
+            : SystemUiOverlayStyle.dark,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: widget.onBack,
         ),
       ),
-      centerTitle: true,
-      elevation: 0,
-      backgroundColor: Colors.white,
-      foregroundColor: Colors.black,
-      leading: IconButton(
-        icon: Icon(Icons.arrow_back),
-        onPressed: onBack,
-      ),
-  
-    ),
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -55,10 +69,10 @@ class ReservationDetailPage extends StatelessWidget {
             Container(
               padding: EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: isDarkMode ? Colors.grey[850] : Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withOpacity(isDarkMode ? 0.1 : 0.05),
                     blurRadius: 10,
                     offset: Offset(0, 2),
                   ),
@@ -66,13 +80,13 @@ class ReservationDetailPage extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  _buildStatusHeader(reservation['status'] ?? 'unknown'),
+                  _buildStatusHeader(widget.reservation['status'] ?? 'unknown', isDarkMode),
                   SizedBox(height: 16),
                   Text(
-                    'Créé le: ${DateFormat('dd MMM yyyy HH:mm').format(DateTime.parse(reservation['createdAt']))}',
+                    'Créé le: ${DateFormat('dd MMM yyyy HH:mm').format(DateTime.parse(widget.reservation['createdAt']))}',
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.grey[600],
+                      color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                     ),
                   ),
                 ],
@@ -85,29 +99,29 @@ class ReservationDetailPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSectionTitle('Informations du véhicule'),
+                  _buildSectionTitle('Informations du véhicule', isDarkMode),
                   SizedBox(height: 12),
-                  _buildCarInfoCard(reservation, carImages),
+                  _buildCarInfoCard(widget.reservation, carImages, isDarkMode),
                   SizedBox(height: 24),
-                  _buildSectionTitle('Informations du conducteur'),
+                  _buildSectionTitle('Informations du conducteur', isDarkMode),
                   SizedBox(height: 12),
-                  _buildDriverInfoCard(reservation),
+                  _buildDriverInfoCard(widget.reservation, isDarkMode),
                   SizedBox(height: 24),
-                  _buildSectionTitle('Informations du client'),
+                  _buildSectionTitle('Informations du client', isDarkMode),
                   SizedBox(height: 12),
-                  _buildClientInfoCard(reservation),
+                  _buildClientInfoCard(widget.reservation, isDarkMode),
                   SizedBox(height: 24),
-                  _buildSectionTitle('Détails de la réservation'),
+                  _buildSectionTitle('Détails de la réservation', isDarkMode),
                   SizedBox(height: 12),
-                  _buildReservationDetailsCard(reservation),
+                  _buildReservationDetailsCard(widget.reservation, isDarkMode),
                   SizedBox(height: 24),
-                  _buildSectionTitle('Options supplémentaires'),
+                  _buildSectionTitle('Options supplémentaires', isDarkMode),
                   SizedBox(height: 12),
-                  _buildAdditionalOptionsCard(reservation),
+                  _buildAdditionalOptionsCard(widget.reservation, isDarkMode),
                   SizedBox(height: 24),
-                  _buildSectionTitle('Paiement'),
+                  _buildSectionTitle('Paiement', isDarkMode),
                   SizedBox(height: 12),
-                  _buildPaymentCard(reservation),
+                  _buildPaymentCard(widget.reservation, isDarkMode),
                 ],
               ),
             ),
@@ -115,11 +129,11 @@ class ReservationDetailPage extends StatelessWidget {
           ],
         ),
       ),
-      bottomNavigationBar: _buildActionButtons(context, reservation),
+      bottomNavigationBar: _buildActionButtons(context, widget.reservation, isDarkMode),
     );
   }
 
-  Widget _buildStatusHeader(String status) {
+  Widget _buildStatusHeader(String status, bool isDarkMode) {
     Color statusColor;
     String statusText;
     
@@ -152,7 +166,7 @@ class ReservationDetailPage extends StatelessWidget {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: BoxDecoration(
-        color: statusColor.withOpacity(0.1),
+        color: statusColor.withOpacity(isDarkMode ? 0.3 : 0.1),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -173,25 +187,25 @@ class ReservationDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
+  Widget _buildSectionTitle(String title, bool isDarkMode) {
     return Text(
       title,
       style: TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.bold,
-        color: Colors.black87,
+        color: isDarkMode ? Colors.white : Colors.black87,
       ),
     );
   }
 
-  Widget _buildCarInfoCard(Map<String, dynamic> reservation, List<String> carImages) {
+  Widget _buildCarInfoCard(Map<String, dynamic> reservation, List<String> carImages, bool isDarkMode) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDarkMode ? Colors.grey[850] : Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(isDarkMode ? 0.1 : 0.05),
             blurRadius: 10,
             offset: Offset(0, 2),
           ),
@@ -204,19 +218,27 @@ class ReservationDetailPage extends StatelessWidget {
             child: Container(
               height: 200,
               width: 400,
-              color: Colors.grey[50],
+              color: isDarkMode ? Colors.grey[800] : Colors.grey[50],
               child: carImages.isNotEmpty
                   ? Image.network(
                       carImages[0],
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
                         return Center(
-                          child: Icon(Icons.car_rental, size: 60, color: Colors.grey),
+                          child: Icon(
+                            Icons.car_rental, 
+                            size: 60, 
+                            color: isDarkMode ? Colors.grey[400] : Colors.grey,
+                          ),
                         );
                       },
                     )
                   : Center(
-                      child: Icon(Icons.car_rental, size: 60, color: Colors.grey),
+                      child: Icon(
+                        Icons.car_rental, 
+                        size: 60, 
+                        color: isDarkMode ? Colors.grey[400] : Colors.grey,
+                      ),
                     ),
             ),
           ),
@@ -230,12 +252,16 @@ class ReservationDetailPage extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: isDarkMode ? Colors.white : Colors.black87,
                   ),
                 ),
                 SizedBox(height: 8),
-                _buildInfoRow(Icons.confirmation_number, 'Immatriculation', reservation['car']['registrationNumber'] ?? 'N/A'),
-
+                _buildInfoRow(
+                  Icons.confirmation_number, 
+                  'Immatriculation', 
+                  reservation['car']['registrationNumber'] ?? 'N/A',
+                  isDarkMode,
+                ),
               ],
             ),
           ),
@@ -244,14 +270,14 @@ class ReservationDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _buildDriverInfoCard(Map<String, dynamic> reservation) {
+  Widget _buildDriverInfoCard(Map<String, dynamic> reservation, bool isDarkMode) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDarkMode ? Colors.grey[850] : Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(isDarkMode ? 0.1 : 0.05),
             blurRadius: 10,
             offset: Offset(0, 2),
           ),
@@ -265,8 +291,12 @@ class ReservationDetailPage extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 30,
-                backgroundColor: AppColors.primary.withOpacity(0.1),
-                child: Icon(Icons.person, size: 30, color: AppColors.primary),
+                backgroundColor: AppColors.primary.withOpacity(isDarkMode ? 0.2 : 0.1),
+                child: Icon(
+                  Icons.person, 
+                  size: 30, 
+                  color: AppColors.primary,
+                ),
               ),
               SizedBox(width: 16),
               Expanded(
@@ -278,14 +308,14 @@ class ReservationDetailPage extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        color: isDarkMode ? Colors.white : Colors.black87,
                       ),
                     ),
                     SizedBox(height: 4),
                     Text(
                       reservation['driverDetails']['email'] ?? 'N/A',
                       style: TextStyle(
-                        color: Colors.grey[600],
+                        color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                       ),
                     ),
                   ],
@@ -294,19 +324,63 @@ class ReservationDetailPage extends StatelessWidget {
             ],
           ),
           SizedBox(height: 16),
-          _buildInfoRow(Icons.phone, 'Téléphone', reservation['driverDetails']['phoneNumber'] ?? 'N/A'),
-          _buildInfoRow(Icons.cake, 'Date de naissance', _formatDate(reservation['driverDetails']['birthDate'])),
-          _buildInfoRow(Icons.location_on, 'Pays', reservation['driverDetails']['country'] ?? 'N/A'),
-          _buildInfoRow(Icons.card_membership, 'Permis de conduire', reservation['driverDetails']['driverLicense'] ?? 'Non fourni'),
+          GestureDetector(
+            onTap: () {
+              if (reservation['driverDetails']['phoneNumber'] != null) {
+                _makePhoneCall(reservation['driverDetails']['phoneNumber']);
+              }
+            },
+            child: _buildInfoRow(
+              Icons.phone, 
+              'Téléphone', 
+              reservation['driverDetails']['phoneNumber'] ?? 'N/A', 
+              isDarkMode,
+            ),
+          ),
+          _buildInfoRow(Icons.cake, 'Date de naissance', _formatDate(reservation['driverDetails']['birthDate']), isDarkMode),
+          _buildInfoRow(Icons.location_on, 'Pays', reservation['driverDetails']['country'] ?? 'N/A', isDarkMode),
+          _buildInfoRow(Icons.card_membership, 'Permis de conduire', reservation['driverDetails']['driverLicense'] ?? 'Non fourni', isDarkMode),
         ],
       ),
     );
   }
 
-// ... existing code ...
-  Widget _buildClientInfoCard(Map<String, dynamic> reservation) {
+  Future<void> _makePhoneCall(String phoneNumber) async {
+  try {
+    // Nettoyer le numéro de téléphone
+    final cleanedNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+    
+    if (cleanedNumber.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Numéro de téléphone invalide')),
+      );
+      return;
+    }
+
+    final Uri launchUri = Uri(
+      scheme: 'tel',
+      path: cleanedNumber,
+    );
+
+    if (await canLaunchUrl(launchUri)) {
+      await launchUrl(launchUri);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Impossible d\'effectuer l\'appel')),
+      );
+    }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Erreur lors de l\'appel: ${e.toString()}')),
+    );
+  }
+}
+
+ Widget _buildClientInfoCard(Map<String, dynamic> reservation, bool isDarkMode) {
     final userImage = reservation['user']['image'] != null
-        ? "http://127.0.0.1:9098${reservation['user']['image']}"
+        ? (reservation['user']['image'].toString().startsWith('https')
+            ? reservation['user']['image']
+            : "https://res.cloudinary.com/dcs2edizr/image/upload/${reservation['user']['image']}")
         : null;
     final userName = reservation['user']['name'] ?? 'N/A';
     final initials = userName.isNotEmpty
@@ -315,11 +389,11 @@ class ReservationDetailPage extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDarkMode ? Colors.grey[850] : Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(isDarkMode ? 0.1 : 0.05),
             blurRadius: 10,
             offset: Offset(0, 2),
           ),
@@ -335,13 +409,13 @@ class ReservationDetailPage extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: AppColors.primary.withOpacity(0.2),
+                    color: AppColors.primary.withOpacity(isDarkMode ? 0.3 : 0.2),
                     width: 2,
                   ),
                 ),
                 child: CircleAvatar(
                   radius: 30,
-                  backgroundColor: AppColors.primary.withOpacity(0.1),
+                  backgroundColor: AppColors.primary.withOpacity(isDarkMode ? 0.2 : 0.1),
                   foregroundImage: userImage != null ? NetworkImage(userImage) : null,
                   child: userImage == null
                       ? Text(
@@ -365,14 +439,14 @@ class ReservationDetailPage extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        color: isDarkMode ? Colors.white : Colors.black87,
                       ),
                     ),
                     SizedBox(height: 4),
                     Text(
                       'ID Client: ${reservation['user']['_id'] ?? 'N/A'}',
                       style: TextStyle(
-                        color: Colors.grey[600],
+                        color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                       ),
                     ),
                   ],
@@ -384,16 +458,15 @@ class ReservationDetailPage extends StatelessWidget {
       ),
     );
   }
-// ... existing code ...
 
-  Widget _buildReservationDetailsCard(Map<String, dynamic> reservation) {
+  Widget _buildReservationDetailsCard(Map<String, dynamic> reservation, bool isDarkMode) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDarkMode ? Colors.grey[850] : Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(isDarkMode ? 0.1 : 0.05),
             blurRadius: 10,
             offset: Offset(0, 2),
           ),
@@ -403,23 +476,43 @@ class ReservationDetailPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildInfoRow(Icons.calendar_today, 'Dates', '${_formatDateTime(reservation['startDate'])} - ${_formatDateTime(reservation['endDate'])}'),
-          _buildInfoRow(Icons.timer, 'Durée', _calculateDuration(reservation['startDate'], reservation['endDate'])),
-          _buildInfoRow(Icons.location_pin, 'Lieu de prise en charge', reservation['location'] ?? 'N/A'),
-          _buildInfoRow(Icons.euro, 'Prix total', '${reservation['totalPrice']} /DTN'),
+          _buildInfoRow(
+            Icons.calendar_today, 
+            'Dates', 
+            '${_formatDateTime(reservation['startDate'])} - ${_formatDateTime(reservation['endDate'])}',
+            isDarkMode,
+          ),
+          _buildInfoRow(
+            Icons.timer, 
+            'Durée', 
+            _calculateDuration(reservation['startDate'], reservation['endDate']),
+            isDarkMode,
+          ),
+          _buildInfoRow(
+            Icons.location_pin, 
+            'Lieu de prise en charge', 
+            reservation['location'] ?? 'N/A',
+            isDarkMode,
+          ),
+          _buildInfoRow(
+            Icons.euro, 
+            'Prix total', 
+            '${reservation['totalPrice']} /DTN',
+            isDarkMode,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildAdditionalOptionsCard(Map<String, dynamic> reservation) {
+  Widget _buildAdditionalOptionsCard(Map<String, dynamic> reservation, bool isDarkMode) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDarkMode ? Colors.grey[850] : Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(isDarkMode ? 0.1 : 0.05),
             blurRadius: 10,
             offset: Offset(0, 2),
           ),
@@ -429,21 +522,31 @@ class ReservationDetailPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildInfoRow(Icons.child_care, 'Sièges enfants', reservation['childSeats']?.toString() ?? '0'),
-          _buildInfoRow(Icons.people_alt, 'Conducteurs supplémentaires', reservation['additionalDrivers']?.toString() ?? '0'),
+          _buildInfoRow(
+            Icons.child_care, 
+            'Sièges enfants', 
+            reservation['childSeats']?.toString() ?? '0',
+            isDarkMode,
+          ),
+          _buildInfoRow(
+            Icons.people_alt, 
+            'Conducteurs supplémentaires', 
+            reservation['additionalDrivers']?.toString() ?? '0',
+            isDarkMode,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildPaymentCard(Map<String, dynamic> reservation) {
+  Widget _buildPaymentCard(Map<String, dynamic> reservation, bool isDarkMode) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDarkMode ? Colors.grey[850] : Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(isDarkMode ? 0.1 : 0.05),
             blurRadius: 10,
             offset: Offset(0, 2),
           ),
@@ -453,14 +556,24 @@ class ReservationDetailPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildInfoRow(Icons.payment, 'Méthode de paiement', reservation['paymentMethod'] ?? 'N/A'),
-          _buildInfoRow(Icons.paid, 'Statut du paiement', reservation['paymentStatus'] ?? 'N/A'),
+          _buildInfoRow(
+            Icons.payment, 
+            'Méthode de paiement', 
+            reservation['paymentMethod'] ?? 'N/A',
+            isDarkMode,
+          ),
+          _buildInfoRow(
+            Icons.paid, 
+            'Statut du paiement', 
+            reservation['paymentStatus'] ?? 'N/A',
+            isDarkMode,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value) {
+  Widget _buildInfoRow(IconData icon, String label, String value, bool isDarkMode) {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -475,7 +588,7 @@ class ReservationDetailPage extends StatelessWidget {
                   label,
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.grey[600],
+                    color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                   ),
                 ),
                 SizedBox(height: 2),
@@ -484,7 +597,7 @@ class ReservationDetailPage extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: Colors.black87,
+                    color: isDarkMode ? Colors.white : Colors.black87,
                   ),
                 ),
               ],
@@ -495,19 +608,18 @@ class ReservationDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButtons(BuildContext context, Map<String, dynamic> reservation) {
-    // Only show buttons if status is pending
+  Widget _buildActionButtons(BuildContext context, Map<String, dynamic> reservation, bool isDarkMode) {
     if (reservation['status'] != 'pending') {
-      return SizedBox.shrink(); // Return empty widget if not pending
+      return SizedBox.shrink();
     }
 
     return Container(
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDarkMode ? Colors.grey[850] : Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(isDarkMode ? 0.1 : 0.05),
             blurRadius: 10,
             offset: Offset(0, -2),
           ),
@@ -517,7 +629,7 @@ class ReservationDetailPage extends StatelessWidget {
         children: [
           Expanded(
             child: ElevatedButton(
-              onPressed: () => _updateReservationStatus(context, 'accepted'),
+              onPressed: _isUpdatingStatus ? null : () => _updateReservationStatus(context, 'accepted'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
                 padding: EdgeInsets.symmetric(vertical: 16),
@@ -525,19 +637,29 @@ class ReservationDetailPage extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: Text(
-                'Accepter',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              child: _isUpdatingStatus
+                  ? SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : Text(
+                      'Accepter',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
             ),
           ),
           SizedBox(width: 12),
           Expanded(
             child: ElevatedButton(
-              onPressed: () => _updateReservationStatus(context, 'rejected'),
+              onPressed: _isUpdatingStatus ? null : () => _updateReservationStatus(context, 'rejected'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
                 padding: EdgeInsets.symmetric(vertical: 16),
@@ -545,13 +667,23 @@ class ReservationDetailPage extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: Text(
-                'Rejeter',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              child: _isUpdatingStatus
+                  ? SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : Text(
+                      'Rejeter',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
             ),
           ),
         ],
@@ -560,8 +692,14 @@ class ReservationDetailPage extends StatelessWidget {
   }
 
   Future<void> _updateReservationStatus(BuildContext context, String status) async {
+    if (_isUpdatingStatus) return;
+
+    setState(() {
+      _isUpdatingStatus = true;
+    });
+
     final scaffoldMessenger = ScaffoldMessenger.of(context);
-    final url = Uri.parse('http://127.0.0.1:9098/api/reservation/${reservation['_id']}');
+    final url = Uri.parse('https://dumum-tergo-backend.onrender.com/api/reservation/${widget.reservation['_id']}');
     final token = await storage.read(key: 'seller_token');
 
     try {
@@ -579,19 +717,34 @@ class ReservationDetailPage extends StatelessWidget {
 
       if (response.statusCode == 200) {
         scaffoldMessenger.showSnackBar(
-          SnackBar(content: Text('Statut mis à jour avec succès')),
+          SnackBar(
+            content: Text('Statut mis à jour avec succès'),
+            backgroundColor: Theme.of(context).colorScheme.secondary,
+          ),
         );
-        onBack();
+        widget.onBack();
       } else {
         final errorData = jsonDecode(response.body);
         scaffoldMessenger.showSnackBar(
-          SnackBar(content: Text('Erreur: ${errorData['message'] ?? errorData['error'] ?? 'Erreur inconnue'}')),
+          SnackBar(
+            content: Text('Erreur: ${errorData['message'] ?? errorData['error'] ?? 'Erreur inconnue'}'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } catch (e) {
       scaffoldMessenger.showSnackBar(
-        SnackBar(content: Text('Erreur de connexion: $e')),
+        SnackBar(
+          content: Text('Erreur de connexion: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUpdatingStatus = false;
+        });
+      }
     }
   }
 

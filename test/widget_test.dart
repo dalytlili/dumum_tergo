@@ -14,13 +14,15 @@ import 'package:dumum_tergo/main.dart';
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-      final wsService = WebSocketService(); // أو mock منه لو تعمل اختبار حقيقي
+   //   final wsService = WebSocketService(); // أو mock منه لو تعمل اختبار حقيقي
 
  await tester.pumpWidget(
     MyApp(
-      wsService: wsService,
+    //  wsService: wsService,
       initialAuthToken: null,
       initialUserId: null,
+                isConnected: true, // Ajoutez ce paramètre requis
+
     ),
   );
     // Verify that our counter starts at 0.

@@ -7,9 +7,9 @@ import 'package:dumum_tergo/models/camping_item.dart';
 
 class CampingItemDetailSellerScreen extends StatefulWidget {
   final CampingItem item;
-  final bool fromShop; // Nouveau paramètre pour indiquer si on vient de la boutique
+  final bool fromShop;
 
-  const CampingItemDetailSellerScreen({Key? key, required this.item, this.fromShop = false,}) : super(key: key);
+  const CampingItemDetailSellerScreen({Key? key, required this.item, this.fromShop = false}) : super(key: key);
 
   @override
   State<CampingItemDetailSellerScreen> createState() => _CampingItemDetailSellerScreenState();
@@ -17,6 +17,26 @@ class CampingItemDetailSellerScreen extends StatefulWidget {
 
 class _CampingItemDetailSellerScreenState extends State<CampingItemDetailSellerScreen> {
   int _currentImageIndex = 0;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _updateSystemUI();
+  }
+
+  void _updateSystemUI() {
+    final brightness = Theme.of(context).brightness;
+    final isDark = brightness == Brightness.dark;
+
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        systemNavigationBarColor: isDark ? Colors.grey[900] : Colors.white,
+        systemNavigationBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+      ),
+    );
+  }
 
   void _changeMainImage(int index) {
     setState(() {
@@ -76,7 +96,7 @@ class _CampingItemDetailSellerScreenState extends State<CampingItemDetailSellerS
       context,
       MaterialPageRoute(
         builder: (context) => FullScreenImageGallery(
-          images: widget.item.images.map((image) => 'http://localhost:9098/images/$image').toList(),
+          images: widget.item.images.map((image) => 'https://res.cloudinary.com/dcs2edizr/image/upload/$image').toList(),
           initialIndex: _currentImageIndex,
         ),
       ),
@@ -129,7 +149,6 @@ class _CampingItemDetailSellerScreenState extends State<CampingItemDetailSellerS
               onPressed: selectedReason == null 
                   ? null 
                   : () {
-                      // Ici vous pouvez ajouter la logique pour envoyer le signalement
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
@@ -155,10 +174,14 @@ class _CampingItemDetailSellerScreenState extends State<CampingItemDetailSellerS
     final surfaceColor = theme.colorScheme.surface;
     final onSurfaceColor = theme.colorScheme.onSurface;
 
+    final iconColor = isDarkMode ? Colors.white : Colors.black;
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.item.name),
-    
+                iconTheme: IconThemeData(color: iconColor), // Applique la couleur aux icônes de l'appbar
+   systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarIconBrightness: isDarkMode ? Brightness.light : Brightness.dark,
+        ),
       ),
       body: Column(
         children: [
@@ -167,7 +190,7 @@ class _CampingItemDetailSellerScreenState extends State<CampingItemDetailSellerS
               physics: const BouncingScrollPhysics(),
               slivers: [
                 SliverToBoxAdapter(
-                  child: _buildImageCarousel(),
+                  child: _buildImageCarousel(isDarkMode),
                 ),
                 SliverPadding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -328,22 +351,19 @@ class _CampingItemDetailSellerScreenState extends State<CampingItemDetailSellerS
                         ),
                       ],
                       const SizedBox(height: 24),
-                 
-                    
-
                     ]),
                   ),
                 ),
               ],
             ),
           ),
-    
         ],
       ),
     );
   }
 
-  Widget _buildImageCarousel() {
+  Widget _buildImageCarousel(bool isDarkMode) {
+      final iconColor = isDarkMode ? Colors.white : Colors.black; 
     final images = widget.item.images;
     return Column(
       children: [
@@ -355,10 +375,10 @@ class _CampingItemDetailSellerScreenState extends State<CampingItemDetailSellerS
               Container(
                 height: 320,
                 width: double.infinity,
-                color: Colors.grey[200],
+                color: isDarkMode ? Colors.grey[800] : Colors.grey[200],
                 alignment: Alignment.center,
                 child: Image.network(
-                  'http://localhost:9098/images/${widget.item.images.isNotEmpty ? widget.item.images[_currentImageIndex] : 'default.jpg'}',
+                  'https://res.cloudinary.com/dcs2edizr/image/upload/${widget.item.images.isNotEmpty ? widget.item.images[_currentImageIndex] : 'default.jpg'}',
                   fit: BoxFit.contain,
                   loadingBuilder: (context, child, loadingProgress) {
                     if (loadingProgress == null) return child;
@@ -368,11 +388,14 @@ class _CampingItemDetailSellerScreenState extends State<CampingItemDetailSellerS
                             ? loadingProgress.cumulativeBytesLoaded / 
                               loadingProgress.expectedTotalBytes!
                             : null,
-                      ),
+color: iconColor,                      ),
                     );
                   },
                   errorBuilder: (context, error, stackTrace) => Center(
-                    child: Icon(Icons.image, size: 50, color: Colors.grey[400]),
+                    child: Icon(
+                      Icons.image, 
+                      size: 50, 
+color: iconColor,                    ),
                   ),
                 ),
               ),
@@ -390,8 +413,8 @@ class _CampingItemDetailSellerScreenState extends State<CampingItemDetailSellerS
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: index == _currentImageIndex 
-                              ? Colors.white 
-                              : Colors.white.withOpacity(0.5),
+                              ? isDarkMode ? Colors.white : Colors.black
+                              : (isDarkMode ? Colors.white.withOpacity(0.5) : Colors.black.withOpacity(0.5)),
                         ),
                       ),
                     ),
@@ -426,11 +449,15 @@ class _CampingItemDetailSellerScreenState extends State<CampingItemDetailSellerS
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(6),
                       child: Image.network(
-                        'http://localhost:9098/images/${widget.item.images[index]}',
+                        'https://res.cloudinary.com/dcs2edizr/image/upload/${widget.item.images[index]}',
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) => Container(
-                          color: Colors.grey[200],
-                          child: const Icon(Icons.broken_image, size: 24, color: Colors.grey),
+                          color: isDarkMode ? Colors.grey[700] : Colors.grey[200],
+                          child: Icon(
+                            Icons.broken_image, 
+                            size: 24, 
+                            color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                          ),
                         ),
                       ),
                     ),
@@ -442,7 +469,4 @@ class _CampingItemDetailSellerScreenState extends State<CampingItemDetailSellerS
       ],
     );
   }
-
-
-
 }

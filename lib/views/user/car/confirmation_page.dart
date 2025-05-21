@@ -64,62 +64,71 @@ class _ConfirmationPageState extends State<ConfirmationPage> {
       isDateValid = selectedDay != null && selectedMonth != null && selectedYear != null;
     });
   }
-  Future<void> _submitReservation() async {
-if (!(_formKey.currentState?.validate() ?? false)) return;    if (!isDateValid) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez sélectionner une date de naissance valide'),
-          backgroundColor: Colors.red,
+ Future<void> _submitReservation() async {
+  if (!(_formKey.currentState?.validate() ?? false)) return;
+  if (!isDateValid) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Veuillez sélectionner une date de naissance valide'),
+        backgroundColor: Colors.red,
+      ),
+    );
+    return;
+  }
+
+  setState(() => _isLoading = true);
+  _formKey.currentState!.save();
+
+  try {
+    final monthIndex = months.indexOf(selectedMonth!) + 1;
+    final formattedBirthDate = '${selectedYear}-${monthIndex.toString().padLeft(2, '0')}-${selectedDay!.padLeft(2, '0')}';
+
+    final reservationData = await ReservationService().createReservation(
+      carId: widget.car['_id'],
+      startDate: widget.pickupDate,
+      endDate: widget.returnDate,
+      childSeats: widget.childSeats,
+      additionalDrivers: widget.additionalDrivers,
+      location: widget.pickupLocation,
+      driverEmail: email,
+      driverFirstName: prenom,
+      driverLastName: nom,
+      driverBirthDate: formattedBirthDate,
+      driverPhoneNumber: '+${selectedCountry.phoneCode}${phoneNumberController.text}',
+      driverCountry: pays,
+    );
+
+    if (!mounted) return;
+    
+    // Créer un objet combiné contenant à la fois les données de réservation et la voiture
+    final combinedData = {
+      ...reservationData,
+      'car': widget.car, // Ajoutez l'objet car complet
+      'totalPrice': widget.totalPrice, // Ajoutez le prix total
+    };
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ReservationSuccessPage(
+          reservationData: combinedData, // Envoyez les données combinées
         ),
-      );
-      return;
-    }
-
-    setState(() => _isLoading = true);
-    _formKey.currentState!.save();
-
-    try {
-      // Formater la date de naissance
-      final monthIndex = months.indexOf(selectedMonth!) + 1;
-      final formattedBirthDate = '${selectedYear}-${monthIndex.toString().padLeft(2, '0')}-${selectedDay!.padLeft(2, '0')}';
-
-      final reservationData = await ReservationService().createReservation(
-        carId: widget.car['_id'],
-        startDate: widget.pickupDate,
-        endDate: widget.returnDate,
-        childSeats: widget.childSeats,
-        additionalDrivers: widget.additionalDrivers,
-        location: widget.pickupLocation,
-        driverEmail: email,
-        driverFirstName: prenom,
-        driverLastName: nom,
-        driverBirthDate: formattedBirthDate,
-        driverPhoneNumber: '+${selectedCountry.phoneCode}${phoneNumberController.text}',
-        driverCountry: pays,
-        // authToken: 'your-auth-token', // Décommentez si nécessaire
-      );
-
-      if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ReservationSuccessPage(reservationData: reservationData),
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      ),
+    );
+  } catch (e) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Erreur: ${e.toString()}'),
+        backgroundColor: Colors.red,
+      ),
+    );
+  } finally {
+    if (mounted) {
+      setState(() => _isLoading = false);
     }
   }
+}
   @override
   Widget build(BuildContext context) {
     String telephone;

@@ -36,7 +36,7 @@ Future<bool> verifyOTP(String authToken) async {
         debugPrint('OTP envoyé au serveur: $_otpCode'); // Log pour déboguer
 
     final response = await http.post(
-      Uri.parse('http://localhost:9098/api/vendor/verify-otp-update-mobile'),
+      Uri.parse('https://dumum-tergo-backend.onrender.com/api/vendor/verify-otp-update-mobile'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $authToken', // Include the token here
@@ -78,7 +78,7 @@ Future<bool> verifyOTP(String authToken) async {
     try {
       // Envoyer une requête pour renvoyer l'OTP
       final response = await http.post(
-        Uri.parse('http://localhost:9098/api/vendor/resend-otp'),
+        Uri.parse('https://dumum-tergo-backend.onrender.com/api/vendor/resend-otp'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'mobile': fullPhoneNumber,

@@ -47,7 +47,7 @@ DateTime? get subscriptionExpirationDate => _subscriptionExpirationDate;
     }
 
     final response = await http.get(
-      Uri.parse('http://127.0.0.1:9098/api/vendor/profile'),
+      Uri.parse('https://dumum-tergo-backend.onrender.com/api/vendor/profile'),
       headers: {
         'Authorization': 'Bearer $token',
       },
@@ -80,7 +80,7 @@ phoneNumberController.text = rawPhoneNumber;
         imageUrlController.text = userData['image'] != null &&
                 userData['image'].startsWith('http')
             ? userData['image']
-            : "http://127.0.0.1:9098${userData['image'] ?? '/images/images.png'}";
+            : "https://res.cloudinary.com/dcs2edizr/image/upload/${userData['image'] ?? '/images/images.png'}";
 
      // Mettre à jour la date d'expiration de l'abonnement
         if (userData['subscription'] != null) {
@@ -136,7 +136,7 @@ Future<void> updateProfile(BuildContext context) async {
 
     // Récupérer le vendeur actuel pour vérifier si le numéro de mobile a changé
     final currentVendorResponse = await http.get(
-      Uri.parse('http://127.0.0.1:9098/api/vendor/profile'),
+      Uri.parse('https://dumum-tergo-backend.onrender.com/api/vendor/profile'),
       headers: {
         'Authorization': 'Bearer $token',
       },
@@ -152,7 +152,7 @@ Future<void> updateProfile(BuildContext context) async {
     // Vérifier si le numéro de mobile a changé
     final bool isMobileChanged = fullPhoneNumber != currentMobile;
 
-    final uri = Uri.parse('http://127.0.0.1:9098/api/vendor/update-profile');
+    final uri = Uri.parse('https://dumum-tergo-backend.onrender.com/api/vendor/update-profile');
     var request = http.MultipartRequest('POST', uri)
       ..headers['Authorization'] = 'Bearer $token'
       ..fields['businessName'] = nameController.text

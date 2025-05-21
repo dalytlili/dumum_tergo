@@ -25,8 +25,8 @@ class _ListeSellerCarState extends State<ListeSellerCar> {
       builder: (context) => Container(
         height: MediaQuery.of(context).size.height * 0.9,
         decoration: BoxDecoration(
-         color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: AddCarRentalPage(),
       ),
@@ -42,42 +42,46 @@ class _ListeSellerCarState extends State<ListeSellerCar> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
     return ChangeNotifierProvider(
       create: (_) => ListeCarViewModel()..fetchCarsFromVendor(),
       child: Scaffold(
-        backgroundColor: Colors.grey[100],
- appBar: AppBar(
-  automaticallyImplyLeading: false,
-  title: const Text('Liste des voitures'),
-  centerTitle: true,
-  elevation: 0,
-  backgroundColor: Colors.white,
-  foregroundColor: Colors.black,
-  actions: [
-    IconButton(
-      icon: Icon(Icons.add, color: AppColors.primary),
-      onPressed: _showAddCarDialog,
-      tooltip: 'Ajouter une voiture',
-    ),
-  ],
-),
-
+        backgroundColor: isDarkMode ? Colors.grey[900] : Colors.grey[100],
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          title: const Text('Liste des voitures'),
+          centerTitle: true,
+          elevation: 0,
+          backgroundColor: isDarkMode ? Colors.grey[850] : Colors.white,
+          foregroundColor: isDarkMode ? Colors.white : Colors.black,
+          actions: [
+            IconButton(
+              icon: Icon(Icons.add, color: AppColors.primary),
+              onPressed: _showAddCarDialog,
+              tooltip: 'Ajouter une voiture',
+            ),
+          ],
+        ),
         body: Consumer<ListeCarViewModel>(
           builder: (context, viewModel, child) {
             return Column(
               children: [
                 Container(
-                  color: Colors.white,
+                  color: isDarkMode ? Colors.grey[850] : Colors.white,
                   padding: const EdgeInsets.all(16),
                   child: TextField(
                     controller: _searchController,
                     focusNode: _searchFocusNode,
+                    style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
                     decoration: InputDecoration(
                       hintText: 'Rechercher par matricule...',
-                      prefixIcon: Icon(Icons.search, color: Colors.grey),
+                      hintStyle: TextStyle(color: isDarkMode ? Colors.grey[400] : Colors.grey),
+                      prefixIcon: Icon(Icons.search, color: isDarkMode ? Colors.grey[400] : Colors.grey),
                       suffixIcon: _searchController.text.isNotEmpty
                           ? IconButton(
-                              icon: Icon(Icons.clear),
+                              icon: Icon(Icons.clear, color: isDarkMode ? Colors.grey[400] : Colors.grey),
                               onPressed: () {
                                 _searchController.clear();
                                 viewModel.searchByRegistrationNumber('');
@@ -86,19 +90,19 @@ class _ListeSellerCarState extends State<ListeSellerCar> {
                             )
                           : null,
                       filled: true,
-                      fillColor: Colors.grey[100],
+                      fillColor: isDarkMode ? Colors.grey[800] : Colors.grey[100],
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
                       ),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                     ),
                     onChanged: (value) {
                       viewModel.searchByRegistrationNumber(value);
                     },
                   ),
                 ),
-                Divider(height: 1),
+                Divider(height: 1, color: isDarkMode ? Colors.grey[700] : Colors.grey[200]),
                 if (viewModel.isLoading && viewModel.searchResults.isEmpty)
                   Expanded(
                     child: Center(
@@ -114,10 +118,10 @@ class _ListeSellerCarState extends State<ListeSellerCar> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
-                          SizedBox(height: 16),
+                          const SizedBox(height: 16),
                           Text(
                             viewModel.error!,
-                            style: TextStyle(color: Colors.grey[600]),
+                            style: TextStyle(color: isDarkMode ? Colors.grey[400] : Colors.grey[600]),
                             textAlign: TextAlign.center,
                           ),
                         ],
@@ -130,11 +134,11 @@ class _ListeSellerCarState extends State<ListeSellerCar> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.car_rental, size: 48, color: Colors.grey[400]),
-                          SizedBox(height: 16),
+                          Icon(Icons.car_rental, size: 48, color: isDarkMode ? Colors.grey[600] : Colors.grey[400]),
+                          const SizedBox(height: 16),
                           Text(
                             'Aucun véhicule trouvé',
-                            style: TextStyle(color: Colors.grey[600]),
+                            style: TextStyle(color: isDarkMode ? Colors.grey[400] : Colors.grey[600]),
                           ),
                         ],
                       ),
@@ -146,8 +150,9 @@ class _ListeSellerCarState extends State<ListeSellerCar> {
                       onRefresh: () async {
                         await viewModel.fetchCarsFromVendor();
                       },
+                      color: AppColors.primary,
                       child: ListView.builder(
-                        padding: EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(16),
                         itemCount: viewModel.searchResults.length,
                         itemBuilder: (context, index) {
                           return _buildCarCard(viewModel.searchResults[index], context);
@@ -164,7 +169,9 @@ class _ListeSellerCarState extends State<ListeSellerCar> {
   }
 
   Widget _buildCarCard(Map<String, dynamic> car, BuildContext context) {
-    const String baseUrl = "http://127.0.0.1:9098/images/";
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    const String baseUrl = "https://res.cloudinary.com/dcs2edizr/image/upload/";
     List<String> images = (car['images'] is List)
         ? (car['images'] as List).map((image) => "$baseUrl$image").toList()
         : [];
@@ -174,13 +181,13 @@ class _ListeSellerCarState extends State<ListeSellerCar> {
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isDarkMode ? Colors.grey[850] : Colors.white,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withOpacity(0.1),
               blurRadius: 10,
-              offset: Offset(0, 4),
+              offset: const Offset(0, 4),
             ),
           ],
         ),
@@ -189,7 +196,7 @@ class _ListeSellerCarState extends State<ListeSellerCar> {
           children: [
             if (images.isNotEmpty)
               ClipRRect(
-                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                 child: Image.network(
                   images[0],
                   height: 200,
@@ -215,26 +222,26 @@ class _ListeSellerCarState extends State<ListeSellerCar> {
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.black87,
+                                color: isDarkMode ? Colors.white : Colors.black87,
                               ),
                             ),
-                            SizedBox(height: 8),
+                            const SizedBox(height: 8),
                             _buildFeatureRow(
                               Icons.directions_car,
                               '${car['registrationNumber']}',
                               AppColors.primary,
                             ),
-                            SizedBox(height: 8),
+                            const SizedBox(height: 8),
                             _buildFeatureRow(
                               Icons.location_on,
                               '${car['location']['title']}',
-                              Colors.grey[600]!,
+                              isDarkMode ? Colors.grey[400]! : Colors.grey[600]!,
                             ),
                           ],
                         ),
                       ),
                       Container(
-                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         decoration: BoxDecoration(
                           color: AppColors.primary.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
@@ -254,7 +261,7 @@ class _ListeSellerCarState extends State<ListeSellerCar> {
                               'TND/jour',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.grey[600],
+                                color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                               ),
                             ),
                           ],
@@ -275,7 +282,7 @@ class _ListeSellerCarState extends State<ListeSellerCar> {
     return Row(
       children: [
         Icon(icon, size: 18, color: color),
-        SizedBox(width: 8),
+        const SizedBox(width: 8),
         Flexible(
           child: Text(
             text,

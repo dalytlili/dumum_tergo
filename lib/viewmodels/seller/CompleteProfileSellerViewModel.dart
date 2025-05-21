@@ -30,7 +30,7 @@ String? _idvendor; // Ajouter cette ligne pour déclarer la variable
 
     if (token == null) throw Exception('Token not found');
 
-    final uri = Uri.parse('http://127.0.0.1:9098/api/vendor/complete-profile');
+    final uri = Uri.parse('https://dumum-tergo-backend.onrender.com/api/vendor/complete-profile');
     var request = http.MultipartRequest('POST', uri)
       ..headers['Authorization'] = 'Bearer $token'
       ..fields['businessName'] = nameController.text

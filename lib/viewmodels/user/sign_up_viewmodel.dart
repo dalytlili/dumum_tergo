@@ -56,7 +56,7 @@ class SignUpViewModel extends ChangeNotifier {
     notifyListeners();
   }
  Future<void> loginWithGoogle(BuildContext context) async {
-    final url = 'http://localhost:9098/auth/google';
+    final url = 'https://dumum-tergo-backend.onrender.com/auth/google';
 
     try {
       final result = await FlutterWebAuth2.authenticate(
@@ -98,7 +98,7 @@ class SignUpViewModel extends ChangeNotifier {
 
 
  Future<void> loginWithFacebook(BuildContext context) async {
-    final url = 'http://localhost:9098/auth/facebook/callback';
+    final url = 'https://dumum-tergo-backend.onrender.com/auth/facebook/callback';
 
     try {
       final result = await FlutterWebAuth2.authenticate(

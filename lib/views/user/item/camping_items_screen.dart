@@ -27,32 +27,49 @@ class _CampingItemsScreenState extends State<CampingItemsScreen> {
     });
     _searchController.addListener(_onSearchChanged);
     
-    _scrollController.addListener(() {
-      final currentPosition = _scrollController.offset;
-      final scrollDirection = currentPosition > _lastScrollPosition 
-          ? ScrollDirection.reverse 
-          : ScrollDirection.forward;
-      final scrollDistance = (currentPosition - _lastScrollPosition).abs();
+    _scrollController.addListener(_scrollListener);
+  }
 
-      setState(() {
-        _isAtTop = currentPosition <= 0;
-        
-        if (scrollDirection == ScrollDirection.reverse && !_isAtTop) {
-          _searchBarOffset = (_searchBarOffset - scrollDistance * 2.5)
-              .clamp(-120.0, 0.0);
-        } else if (scrollDirection == ScrollDirection.forward) {
-          _searchBarOffset = (_searchBarOffset + scrollDistance * 2.5)
-              .clamp(-120.0, 0.0);
-        }
-        _lastScrollPosition = currentPosition;
-      });
+  void _scrollListener() {
+    final currentPosition = _scrollController.offset;
+    final scrollDirection = currentPosition > _lastScrollPosition 
+        ? ScrollDirection.reverse 
+        : ScrollDirection.forward;
+    final scrollDistance = (currentPosition - _lastScrollPosition).abs();
+
+    setState(() {
+      _isAtTop = currentPosition <= 0;
+      
+      if (scrollDirection == ScrollDirection.reverse && !_isAtTop) {
+        _searchBarOffset = (_searchBarOffset - scrollDistance * 2.5)
+            .clamp(-120.0, 0.0);
+      } else if (scrollDirection == ScrollDirection.forward) {
+        _searchBarOffset = (_searchBarOffset + scrollDistance * 2.5)
+            .clamp(-120.0, 0.0);
+      }
+      _lastScrollPosition = currentPosition;
     });
+
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final currentScroll = _scrollController.position.pixels;
+    final delta = maxScroll - currentScroll;
+
+    if (delta < 100 && 
+        !Provider.of<CampingItemsViewModel>(context, listen: false).isLoadingMore &&
+        Provider.of<CampingItemsViewModel>(context, listen: false).hasMore) {
+      _loadMoreItems();
+    }
+  }
+
+  Future<void> _loadMoreItems() async {
+    await Provider.of<CampingItemsViewModel>(context, listen: false).loadMoreCampingItems();
   }
 
   @override
   void dispose() {
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
+    _scrollController.removeListener(_scrollListener);
     _scrollController.dispose();
     super.dispose();
   }
@@ -66,6 +83,7 @@ class _CampingItemsScreenState extends State<CampingItemsScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Theme.of(context).cardColor,
       builder: (context) => const FilterSheet(),
     );
   }
@@ -75,8 +93,7 @@ class _CampingItemsScreenState extends State<CampingItemsScreen> {
     return Consumer<CampingItemsViewModel>(
       builder: (context, viewModel, child) {
         return Scaffold(
-      
-          backgroundColor: Colors.white,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           body: Stack(
             children: [
               _buildContent(viewModel),
@@ -90,35 +107,35 @@ class _CampingItemsScreenState extends State<CampingItemsScreen> {
 
   Widget _buildSlidingSearchBar(BuildContext context, CampingItemsViewModel viewModel) {
     return Positioned(
-top: _searchBarOffset,
+      top: _searchBarOffset,
       left: 0,
       right: 0,
       child: Material(
-      elevation: 4,
-        color: Colors.white,
+        elevation: 4,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(12,12, 12, 0), // Padding réduit en haut
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
               child: Row(
                 children: [
                   Expanded(
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Colors.grey[100],
+                        color: Theme.of(context).colorScheme.surfaceVariant,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: TextField(
                         controller: _searchController,
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                         decoration: InputDecoration(
                           hintText: 'Rechercher du matériel...',
+                          hintStyle: TextStyle(color: Theme.of(context).hintColor),
                           border: InputBorder.none,
-                          prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                       //   contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                          prefixIcon: Icon(Icons.search, color: Theme.of(context).hintColor),
                           suffixIcon: _searchController.text.isNotEmpty
                               ? IconButton(
-                                  icon: const Icon(Icons.clear, size: 20),
+                                  icon: Icon(Icons.clear, size: 20, color: Theme.of(context).hintColor),
                                   onPressed: () {
                                     _searchController.clear();
                                     _onSearchChanged();
@@ -132,11 +149,11 @@ top: _searchBarOffset,
                   const SizedBox(width: 8),
                   Container(
                     decoration: BoxDecoration(
-                      color: Theme.of(context).primaryColor,
+                      color: Theme.of(context).colorScheme.primary,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.filter_list, color: Colors.white),
+                      icon: Icon(Icons.filter_list, color: Theme.of(context).colorScheme.onPrimary),
                       onPressed: _showFilterSheet,
                     ),
                   ),
@@ -155,18 +172,18 @@ top: _searchBarOffset,
                       Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: Chip(
-                          label: const Text('Localisation sélectionnée'),
-                          backgroundColor: Colors.white,
-                          side: BorderSide(color: Colors.grey[300]!),
-                          deleteIcon: const Icon(Icons.close, size: 18),
+                          label: Text('Localisation sélectionnée', 
+                              style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+                          backgroundColor: Theme.of(context).colorScheme.surface,
+                          side: BorderSide(color: Theme.of(context).dividerColor),
+                          deleteIcon: Icon(Icons.close, size: 18, color: Theme.of(context).hintColor),
                           onDeleted: () => viewModel.applyFilters(locationId: null),
                         ),
                       ),
-                    // ... autres chips ...
                   ],
                 ),
               ),
-            const Divider(height: 16, thickness: 1),
+            Divider(height: 16, thickness: 1, color: Theme.of(context).dividerColor),
           ],
         ),
       ),
@@ -175,34 +192,51 @@ top: _searchBarOffset,
 
   Widget _buildContent(CampingItemsViewModel viewModel) {
     return Padding(
-      padding: EdgeInsets.only(top: _isAtTop ? 72 : 0), // Ajustement de l'espace
+      padding: EdgeInsets.only(top: _isAtTop ? 72 : 0),
       child: _buildContentList(viewModel),
     );
   }
 
   Widget _buildContentList(CampingItemsViewModel viewModel) {
-    if (viewModel.isLoading) return const Center(child: CircularProgressIndicator());
+    if (viewModel.isLoading && !viewModel.isLoadingMore) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    
     if (viewModel.error.isNotEmpty) return _buildErrorWidget(viewModel);
     if (viewModel.filteredItems.isEmpty) return _buildEmptyWidget();
     
     return NotificationListener<ScrollNotification>(
       onNotification: (notification) => true,
       child: RefreshIndicator(
+        color: Theme.of(context).colorScheme.primary,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         onRefresh: () => viewModel.refreshItems(),
-        child: GridView.builder(
-          controller: _scrollController,
-          padding: const EdgeInsets.all(12),
-          itemCount: viewModel.filteredItems.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 0.52,
-          ),
-          itemBuilder: (context, index) {
-            final item = viewModel.filteredItems[index];
-            return CampingItemCard(item: item);
-          },
+        child: Stack(
+          children: [
+            GridView.builder(
+              controller: _scrollController,
+              padding: const EdgeInsets.all(12),
+              itemCount: viewModel.filteredItems.length + (viewModel.hasMore ? 1 : 0),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: 0.55,
+              ),
+              itemBuilder: (context, index) {
+                if (index >= viewModel.filteredItems.length) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: CircularProgressIndicator(),
+                    ),
+                  );
+                }
+                final item = viewModel.filteredItems[index];
+                return CampingItemCard(item: item);
+              },
+            ),
+          ],
         ),
       ),
     );
@@ -220,7 +254,7 @@ top: _searchBarOffset,
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: () => viewModel.fetchCampingItems(),
-            child: const Text('Réessayer'),
+            child: Text('Réessayer', style: TextStyle(color: Theme.of(context).colorScheme.onPrimary)),
           ),
         ],
       ),
@@ -228,13 +262,13 @@ top: _searchBarOffset,
   }
 
   Widget _buildEmptyWidget() {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.search_off, size: 48, color: Colors.grey),
-          SizedBox(height: 16),
-          Text('Aucun résultat trouvé'),
+          Icon(Icons.search_off, size: 48, color: Theme.of(context).hintColor),
+          const SizedBox(height: 16),
+          Text('Aucun résultat trouvé', style: TextStyle(color: Theme.of(context).hintColor)),
         ],
       ),
     );

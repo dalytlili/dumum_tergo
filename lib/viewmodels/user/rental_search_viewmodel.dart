@@ -13,6 +13,7 @@ class RentalSearchViewModel with ChangeNotifier {
   bool _driverAgeBetween30And65 = false;
   List<Map<String, dynamic>> _searchResults = [];
   bool _isLoading = false;
+  bool _showLocationError = false;
 
   // Getters
   String get pickupLocation => _pickupLocation;
@@ -24,15 +25,20 @@ class RentalSearchViewModel with ChangeNotifier {
   bool get driverAgeBetween30And65 => _driverAgeBetween30And65;
   List<Map<String, dynamic>> get searchResults => _searchResults;
   bool get isLoading => _isLoading;
+  bool get showLocationError => _showLocationError;
 
   // Setters
-  void setPickupLocation(String result) {
+    void setPickupLocation(String result) {
     if (result.isNotEmpty) {
       _pickupLocation = result;
+      _showLocationError = false; // Réinitialiser l'erreur quand la location change
       notifyListeners();
     }
   }
-
+  void validateForm() {
+    _showLocationError = _pickupLocation.isEmpty;
+    notifyListeners();
+  }
   void setReturnToSameLocation(bool value) {
     _returnToSameLocation = value;
     notifyListeners();
@@ -71,7 +77,7 @@ class RentalSearchViewModel with ChangeNotifier {
 
     try {
       final url = Uri.parse(
-        'http://127.0.0.1:9098/api/cars/search?'
+        'https://dumum-tergo-backend.onrender.com/api/cars/search?'
         'location=${Uri.encodeComponent(_pickupLocation)}&'
         'startDate=${_pickupDate.toIso8601String()}&'
         'endDate=${_returnDate.toIso8601String()}'
@@ -98,4 +104,9 @@ class RentalSearchViewModel with ChangeNotifier {
       notifyListeners();
     }
   }
-}
+
+ void setLoading(bool value) {
+    _isLoading = value;
+    notifyListeners();
+  }
+  }

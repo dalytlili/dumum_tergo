@@ -9,7 +9,8 @@ class SignInViewModel with ChangeNotifier {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
-
+  bool _hasUserInteractedWithToggle = false;
+  bool get hasUserInteractedWithToggle => _hasUserInteractedWithToggle;
   bool _isLoggedIn = false; // Propriété privée pour suivre l'état de connexion
   bool get isLoggedIn => _isLoggedIn; 
   Country _selectedCountry = Country(
@@ -42,6 +43,10 @@ class SignInViewModel with ChangeNotifier {
   String get errorMessage => _errorMessage;
   void toggleRememberMe(bool value) {
     _rememberMe = value;
+    notifyListeners();
+  }
+    void setUserInteractedWithToggle() {
+    _hasUserInteractedWithToggle = true;
     notifyListeners();
   }
   void togglePasswordVisibility() {
@@ -84,7 +89,7 @@ class SignInViewModel with ChangeNotifier {
 
 
   Future<void> loginWithGoogle(BuildContext context) async {
-    final url = 'http://localhost:9098/auth/google';
+    final url = 'https://dumum-tergo-backend.onrender.com/auth/google';
 
     try {
       final result = await FlutterWebAuth2.authenticate(
@@ -129,7 +134,7 @@ class SignInViewModel with ChangeNotifier {
 
 
  Future<void> loginWithFacebook(BuildContext context) async {
-    final url = 'http://localhost:9098/auth/facebook/callback';
+    final url = 'https://dumum-tergo-backend.onrender.com/auth/facebook/callback';
 
     try {
       final result = await FlutterWebAuth2.authenticate(
@@ -173,15 +178,14 @@ class SignInViewModel with ChangeNotifier {
 
 
 Future<void> loginUser(BuildContext context) async {
-  // Vérifier si _formKey.currentState est null
   if (_formKey.currentState == null || !_formKey.currentState!.validate()) {
     return;
   }
 
-  // Vérifier si les contrôleurs de texte sont null
   if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Veuillez remplir tous les champs'),
+      const SnackBar(
+        content: Text('Veuillez remplir tous les champs'),
         backgroundColor: Colors.red,
       ),
     );
@@ -193,42 +197,41 @@ Future<void> loginUser(BuildContext context) async {
   notifyListeners();
 
   try {
-    // Si le mode téléphone est activé, vérifier si le code pays est null
     final countryCode = _isPhoneMode ? _selectedCountry.phoneCode : null;
     if (_isPhoneMode && countryCode == null) {
       throw Exception('Code pays non sélectionné');
     }
 
-    // Appel à la méthode d'authentification
     final response = await loginService.authenticate(
-      _emailController.text, // Identifiant (email ou numéro de téléphone)
-      _passwordController.text, // Mot de passe
-      _isPhoneMode, // Indiquer si le mode téléphone est activé
-      countryCode, // Code pays si mode téléphone
+      _emailController.text,
+      _passwordController.text,
+      _isPhoneMode,
+      countryCode,
     );
 
-    // Vérifier si le token est renvoyé
     final accessToken = response['accessToken'];
-        final refreshToken = response['refreshToken'];
+    final refreshToken = response['refreshToken'];
+    final userData = response['user']; // Récupérer les données utilisateur
 
-    print('Access Token: $accessToken');
-       // print('Refresh Token: $refreshToken');
-    if (accessToken != null) {
+    if (accessToken != null && userData != null) {
+      // Stocker les tokens
       await storage.write(key: 'token', value: accessToken);
- await storage.write(key: 'refreshToken', value: refreshToken);
+      await storage.write(key: 'refreshToken', value: refreshToken);
 
-      // Si "Remember Me" est coché, stocker l'email et le mot de passe
+      // Stocker les informations utilisateur
+      await _storeUserData(userData);
+
       if (_rememberMe) {
         await storage.write(key: 'email', value: _emailController.text);
         await storage.write(key: 'password', value: _passwordController.text);
       } else {
         await storage.delete(key: 'email');
         await storage.delete(key: 'password');
-        
       }
 
-      _isLoggedIn = true; // Mettre à jour l'état de connexion
+      _isLoggedIn = true;
       notifyListeners();
+        print('Refresh Token: $userData');
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Connexion réussie')),
@@ -238,13 +241,26 @@ Future<void> loginUser(BuildContext context) async {
   } on Exception catch (e) {
     _errorMessage = e.toString();
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(_errorMessage),
-        backgroundColor: Colors.red,),
+      SnackBar(
+        content: Text(_errorMessage),
+        backgroundColor: Colors.red,
+      ),
     );
   } finally {
     _isLoading = false;
     notifyListeners();
   }
+}
+
+Future<void> _storeUserData(Map<String, dynamic> userData) async {
+  await storage.write(key: 'userId', value: userData['_id']);
+  await storage.write(key: 'userName', value: userData['name']);
+  await storage.write(key: 'userEmail', value: userData['email']);
+  await storage.write(key: 'userMobile', value: userData['mobile']);
+  await storage.write(key: 'userImage', value: userData['image']);
+  await storage.write(key: 'userGenre', value: userData['genre']);
+  await storage.write(key: 'userRole', value: userData['role']);
+  await storage.write(key: 'isVerified', value: userData['is_verified'].toString());
 }
 
 

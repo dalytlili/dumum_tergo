@@ -121,8 +121,7 @@ class _AnimatedNavBarState extends State<AnimatedNavBar> {
       _buildNavItem(Icons.directions_car, "Voiture Location", 0, iconBackgroundColor, selectedItemColor, unselectedItemColor),
       _buildNavItem(Icons.list, "Liste Voitures", 1, iconBackgroundColor, selectedItemColor, unselectedItemColor),
       _buildNavItem(Icons.shopping_cart, "Marketplace", 2, iconBackgroundColor, selectedItemColor, unselectedItemColor),
-      _buildNavItem(Icons.list_alt, "Liste Matériel", 3, iconBackgroundColor, selectedItemColor, unselectedItemColor),
-      _buildNavItem(Icons.person, "Profile", 4, iconBackgroundColor, selectedItemColor, unselectedItemColor),
+      _buildNavItem(Icons.person, "Profile", 3, iconBackgroundColor, selectedItemColor, unselectedItemColor),
     ];
   }
 

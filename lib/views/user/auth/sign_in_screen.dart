@@ -1,17 +1,54 @@
 import 'package:dumum_tergo/services/login_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:country_picker/country_picker.dart';
 import '../../../viewmodels/user/SignInViewModel.dart';
 import '../../../constants/colors.dart';
 
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-
-// Créez une instance de FlutterSecureStorage
 final storage = FlutterSecureStorage();
-class SignInScreen extends StatelessWidget {
+
+class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
+
+  @override
+  State<SignInScreen> createState() => _SignInScreenState();
+}
+
+class _SignInScreenState extends State<SignInScreen> with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _bounceAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+
+    _bounceAnimation = Tween<double>(begin: 0, end: 10).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.elasticOut,
+      ),
+    );
+
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) {
+        _animationController.repeat(reverse: true);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,6 +68,10 @@ class SignInScreen extends StatelessWidget {
               builder: (context, viewModel, child) {
                 final maxWidth = MediaQuery.of(context).size.width;
 
+                if (viewModel.hasUserInteractedWithToggle) {
+                  _animationController.stop();
+                }
+
                 return Form(
                   key: viewModel.formKey,
                   child: Column(
@@ -48,6 +89,34 @@ class SignInScreen extends StatelessWidget {
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 32),
+                      if (!viewModel.isPhoneMode)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              InkWell(
+                                onTap: () {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                          'Cliquez sur l\'icône pour basculer vers la connexion par numéro'),
+                                      duration: Duration(seconds: 2),
+                                    ),
+                                  );
+                                },
+                                child: Text(
+                                  'Utiliser le numéro de téléphone?',
+                                  style: TextStyle(
+                                    color: AppColors.primary,
+                                    fontSize: 12,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       TextFormField(
                         controller: viewModel.emailController,
                         keyboardType: viewModel.isPhoneMode
@@ -69,35 +138,23 @@ class SignInScreen extends StatelessWidget {
                                     );
                                   },
                                   child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 12),
+                                    padding: const EdgeInsets.symmetric(horizontal: 12),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Text(
-                                          viewModel.selectedCountry.flagEmoji,
-                                          style: const TextStyle(fontSize: 20),
-                                        ),
+                                        Text(viewModel.selectedCountry.flagEmoji, style: const TextStyle(fontSize: 20)),
                                         const SizedBox(width: 8),
-                                        Text(
-                                          '+${viewModel.selectedCountry.phoneCode}',
-                                          style: TextStyle(
-                                            color:
-                                                Theme.of(context).brightness ==
-                                                        Brightness.dark
-                                                    ? Colors.white70
-                                                    : Colors.grey[700],
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Icon(
-                                          Icons.arrow_drop_down,
-                                          color: Theme.of(context).brightness ==
-                                                  Brightness.dark
+                                        Text('+${viewModel.selectedCountry.phoneCode}', style: TextStyle(
+                                          color: Theme.of(context).brightness == Brightness.dark
                                               ? Colors.white70
                                               : Colors.grey[700],
-                                        ),
+                                          fontSize: 14,
+                                        )),
+                                        const SizedBox(width: 8),
+                                        Icon(Icons.arrow_drop_down,
+                                            color: Theme.of(context).brightness == Brightness.dark
+                                                ? Colors.white70
+                                                : Colors.grey[700]),
                                       ],
                                     ),
                                   ),
@@ -108,15 +165,45 @@ class SignInScreen extends StatelessWidget {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(
-                                color: AppColors.primary, width: 1.5),
+                            borderSide: BorderSide(color: AppColors.primary, width: 1.5),
                           ),
-                          suffixIcon: IconButton(
-                            icon: Icon(viewModel.isPhoneMode
-                                ? Icons.email
-                                : Icons.phone),
-                            onPressed: viewModel.togglePhoneMode,
-                          ),
+                      suffixIcon: Consumer<SignInViewModel>(
+  builder: (context, viewModel, _) {
+    if (viewModel.hasUserInteractedWithToggle) {
+      _animationController.stop();
+    }
+
+    return AnimatedBuilder(
+      animation: _bounceAnimation,
+      builder: (context, child) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 0), // ajuste ici le décalage
+          child: Transform.translate(
+            offset: Offset(0, -_bounceAnimation.value + 10), // +6 pour descendre
+            child: Tooltip(
+              message: viewModel.isPhoneMode
+                  ? 'Basculer vers email'
+                  : 'Basculer vers téléphone',
+              child: IconButton(
+                icon: Icon(
+                  viewModel.isPhoneMode ? Icons.email : Icons.phone,
+                  size: 24, // tu peux aussi jouer avec la taille
+                ),
+                onPressed: () {
+                  if (!viewModel.hasUserInteractedWithToggle) {
+                    viewModel.setUserInteractedWithToggle();
+                  }
+                  viewModel.togglePhoneMode();
+                },
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  },
+),
+
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -124,7 +211,6 @@ class SignInScreen extends StatelessWidget {
                                 ? 'Veuillez entrer votre numéro'
                                 : 'Veuillez entrer votre email';
                           }
-
                           if (viewModel.isPhoneMode) {
                             if (!RegExp(r'^\d+$').hasMatch(value)) {
                               return 'Veuillez entrer un numéro valide';
@@ -135,7 +221,6 @@ class SignInScreen extends StatelessWidget {
                               return 'Veuillez entrer un email valide';
                             }
                           }
-
                           return null;
                         },
                       ),
@@ -150,15 +235,10 @@ class SignInScreen extends StatelessWidget {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(
-                                color: AppColors.primary, width: 1.5),
+                            borderSide: BorderSide(color: AppColors.primary, width: 1.5),
                           ),
                           suffixIcon: IconButton(
-                            icon: Icon(
-                              viewModel.isPasswordVisible
-                                  ? Icons.visibility_off
-                                  : Icons.visibility,
-                            ),
+                            icon: Icon(viewModel.isPasswordVisible ? Icons.visibility_off : Icons.visibility),
                             onPressed: viewModel.togglePasswordVisibility,
                           ),
                         ),
@@ -182,7 +262,6 @@ class SignInScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 16),
                       Row(
                         children: [
                           Checkbox(
@@ -191,14 +270,11 @@ class SignInScreen extends StatelessWidget {
                               viewModel.toggleRememberMe(value ?? false);
                             },
                           ),
-                          Text('Se souvenir de moi'),
+                          const Text('Se souvenir de moi'),
                         ],
                       ),
-                      const SizedBox(height: 24),
                       ElevatedButton(
-                        onPressed: viewModel.isLoading
-                            ? null
-                            : () => viewModel.loginUser(context),
+                        onPressed: viewModel.isLoading ? null : () => viewModel.loginUser(context),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -207,8 +283,8 @@ class SignInScreen extends StatelessWidget {
                           ),
                         ),
                         child: viewModel.isLoading
-                            ? CircularProgressIndicator(color: Colors.white)
-                            : Text(
+                            ? const CircularProgressIndicator(color: Colors.white)
+                            : const Text(
                                 'Connexion',
                                 style: TextStyle(
                                   color: Colors.white,
@@ -221,15 +297,9 @@ class SignInScreen extends StatelessWidget {
                       Row(
                         children: [
                           Expanded(child: Divider(color: Colors.grey.shade400)),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Text(
-                              'ou',
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                                fontSize: maxWidth > 600 ? 16 : 14,
-                              ),
-                            ),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 8.0),
+                            child: Text("OU"),
                           ),
                           Expanded(child: Divider(color: Colors.grey.shade400)),
                         ],

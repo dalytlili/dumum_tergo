@@ -1,5 +1,6 @@
 import 'package:dumum_tergo/constants/colors.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -23,13 +24,18 @@ class CarDetailPage extends StatefulWidget {
 
 class _CarDetailPageState extends State<CarDetailPage> {
   final storage = const FlutterSecureStorage();
+  bool isDeleting = false;
 
   Future<void> deleteCar(BuildContext context) async {
+    setState(() {
+      isDeleting = true;
+    });
+
     try {
       final token = await storage.read(key: 'seller_token');
 
       final response = await http.delete(
-        Uri.parse('http://127.0.0.1:9098/api/cars/cars/${widget.car['_id']}'),
+        Uri.parse('https://dumum-tergo-backend.onrender.com/api/cars/cars/${widget.car['_id']}'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',
@@ -42,9 +48,9 @@ class _CarDetailPageState extends State<CarDetailPage> {
         widget.onCarDeleted?.call();
         
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Voiture supprimée avec succès'),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: const Text('Voiture supprimée avec succès'),
+            backgroundColor: Theme.of(context).colorScheme.secondary,
           ),
         );
 
@@ -70,6 +76,12 @@ class _CarDetailPageState extends State<CarDetailPage> {
           ),
         );
       }
+    } finally {
+      if (mounted) {
+        setState(() {
+          isDeleting = false;
+        });
+      }
     }
   }
 
@@ -77,22 +89,45 @@ class _CarDetailPageState extends State<CarDetailPage> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
+        final theme = Theme.of(context);
         return AlertDialog(
-          title: const Text('Confirmer la suppression'),
-          content: const Text(
-              'Voulez-vous vraiment supprimer cette voiture et toutes ses réservations?'),
+          backgroundColor: theme.cardColor,
+          title: Text(
+            'Confirmer la suppression',
+            style: TextStyle(color: theme.textTheme.bodyLarge?.color),
+          ),
+          content: Text(
+            'Voulez-vous vraiment supprimer cette voiture et toutes ses réservations?',
+            style: TextStyle(color: theme.textTheme.bodyLarge?.color),
+          ),
           actions: <Widget>[
             TextButton(
-              child: const Text('Annuler'),
+              child: Text(
+                'Annuler',
+                style: TextStyle(color: theme.colorScheme.secondary),
+              ),
               onPressed: () => Navigator.of(context).pop(),
             ),
             TextButton(
-              child: const Text('Supprimer',
-                  style: TextStyle(color: Colors.red)),
-              onPressed: () {
-                Navigator.of(context).pop();
-                deleteCar(context);
-              },
+              child: isDeleting
+                  ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                      ),
+                    )
+                  : Text(
+                      'Supprimer',
+                      style: TextStyle(color: Colors.red),
+                    ),
+              onPressed: isDeleting
+                  ? null
+                  : () {
+                      Navigator.of(context).pop();
+                      deleteCar(context);
+                    },
             ),
           ],
         );
@@ -101,23 +136,24 @@ class _CarDetailPageState extends State<CarDetailPage> {
   }
 
   Widget _buildInfoRow(String label, String value, IconData icon, {Color? color}) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
         children: [
           Icon(
             icon,
-            color: color ?? AppColors.primary,
+            color: color ?? theme.colorScheme.secondary,
             size: 20,
           ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               '$label $value',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
-                color: Colors.black87,
+                color: theme.textTheme.bodyLarge?.color,
               ),
             ),
           ),
@@ -127,6 +163,7 @@ class _CarDetailPageState extends State<CarDetailPage> {
   }
 
   Widget _buildDateChips(List<dynamic> dates) {
+    final theme = Theme.of(context);
     final dateFormat = DateFormat('dd/MM/yyyy');
     return Wrap(
       spacing: 8,
@@ -144,15 +181,28 @@ class _CarDetailPageState extends State<CarDetailPage> {
 
           return Chip(
             label: Text(formattedDate),
-            backgroundColor: Colors.orange[50],
-            labelStyle: const TextStyle(color: Colors.orange),
-            side: BorderSide(color: Colors.orange[100]!),
+            backgroundColor: theme.brightness == Brightness.dark 
+                ? Colors.orange.withOpacity(0.2)
+                : Colors.orange[50],
+            labelStyle: TextStyle(
+              color: theme.brightness == Brightness.dark 
+                  ? Colors.orange[200]
+                  : Colors.orange),
+            side: BorderSide(
+              color: theme.brightness == Brightness.dark 
+                  ? Colors.orange.withOpacity(0.5)
+                  : Colors.orange[100]!),
           );
         } catch (e) {
           return Chip(
             label: const Text('Format invalide'),
-            backgroundColor: Colors.red[50],
-            labelStyle: const TextStyle(color: Colors.red),
+            backgroundColor: theme.brightness == Brightness.dark 
+                ? Colors.red.withOpacity(0.2)
+                : Colors.red[50],
+            labelStyle: TextStyle(
+              color: theme.brightness == Brightness.dark 
+                  ? Colors.red[200]
+                  : Colors.red),
           );
         }
       }).toList(),
@@ -161,6 +211,7 @@ class _CarDetailPageState extends State<CarDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final dateFormat = DateFormat('dd/MM/yyyy');
     String createdAt = 'Date inconnue';
 
@@ -186,40 +237,57 @@ class _CarDetailPageState extends State<CarDetailPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Détails de voiture',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
+            color: theme.brightness == Brightness.dark ? Colors.white : Colors.black,
           ),
         ),
         centerTitle: true,
         elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        backgroundColor: theme.brightness == Brightness.dark 
+            ? Colors.grey[900] 
+            : Colors.white,
+        iconTheme: IconThemeData(
+          color: theme.brightness == Brightness.dark ? Colors.white : Colors.black,
+        ),
+        systemOverlayStyle: theme.brightness == Brightness.dark
+            ? SystemUiOverlayStyle.light
+            : SystemUiOverlayStyle.dark,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: widget.onBack,
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _confirmDelete(context),
+        onPressed: isDeleting ? null : () => _confirmDelete(context),
         backgroundColor: Colors.red,
-        child: const Icon(Icons.delete, color: Colors.white),
+        child: isDeleting
+            ? SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 3,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : const Icon(Icons.delete, color: Colors.white),
         tooltip: 'Supprimer la voiture',
       ),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Galerie d'images
             if (widget.car['images'] != null && widget.car['images'] is List)
               Container(
                 height: 220,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
-                  color: Colors.grey[200],
+                  color: theme.cardColor,
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
@@ -228,7 +296,7 @@ class _CarDetailPageState extends State<CarDetailPage> {
                     itemCount: (widget.car['images'] as List).length,
                     itemBuilder: (context, index) {
                       String imageUrl =
-                          "http://127.0.0.1:9098/images/${widget.car['images'][index]}";
+                          "https://res.cloudinary.com/dcs2edizr/image/upload/${widget.car['images'][index]}";
                       return Container(
                         margin: const EdgeInsets.only(right: 10),
                         width: 300,
@@ -245,114 +313,102 @@ class _CarDetailPageState extends State<CarDetailPage> {
                 ),
               ),
             const SizedBox(height: 20),
-
-            // Prix et informations principales
             Card(
-  color: Colors.white,
-  elevation: 4,
-  shape: RoundedRectangleBorder(
-    borderRadius: BorderRadius.circular(12),
-  ),
-  child: Padding(
-    padding: const EdgeInsets.all(16.0),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Prix par jour avec une icône
-        Row(
-          children: [
-          
-            SizedBox(width: 8),
-            Text(
-              "${widget.car['pricePerDay']} TND/jour",
-              style: const TextStyle(
-                fontSize: 22,
-                color: AppColors.primary,
-                fontWeight: FontWeight.bold,
+              color: theme.cardColor,
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        SizedBox(width: 8),
+                        Text(
+                          "${widget.car['pricePerDay']} TND/jour",
+                          style: TextStyle(
+                            fontSize: 22,
+                            color: theme.colorScheme.secondary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Divider(height: 1, color: theme.dividerColor),
+                    const SizedBox(height: 16),
+                    _buildInfoRow('Location:', widget.car['location']['title'], Icons.location_pin),
+                    _buildInfoRow('Année:', widget.car['year'].toString(), Icons.calendar_today),
+                    _buildInfoRow('Immatriculation:', widget.car['registrationNumber'], Icons.confirmation_number),
+                    _buildInfoRow('Couleur:', widget.car['color'], Icons.palette),
+                    _buildInfoRow('Places:', widget.car['seats'].toString(), Icons.people),
+                    _buildInfoRow('Transmission:', widget.car['transmission'], Icons.speed),
+                    _buildInfoRow('Kilométrage:', widget.car['mileagePolicy'], Icons.directions_car),
+                    _buildInfoRow('Caution:', '${widget.car['deposit']} TND', Icons.monetization_on),
+                    _buildInfoRow(
+                        'Disponibilité:',
+                        widget.car['isAvailable'] ? 'Disponible' : 'Non disponible',
+                        widget.car['isAvailable'] ? Icons.check_circle : Icons.cancel,
+                        color: widget.car['isAvailable'] ? Colors.green : Colors.red),
+                    _buildInfoRow('Ajoutée le:', createdAt, Icons.access_time),
+                  ],
+                ),
               ),
             ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        const Divider(height: 1),
-        const SizedBox(height: 16),
-
-        // Informations détaillées avec des icônes
-_buildInfoRow('Location:', widget.car['location']['title'], Icons.location_pin),
-        _buildInfoRow('Année:', widget.car['year'].toString(), Icons.calendar_today),
-        _buildInfoRow('Immatriculation:', widget.car['registrationNumber'], Icons.confirmation_number),
-        _buildInfoRow('Couleur:', widget.car['color'], Icons.palette),
-        _buildInfoRow('Places:', widget.car['seats'].toString(), Icons.people),
-        _buildInfoRow('Transmission:', widget.car['transmission'], Icons.speed),
-        _buildInfoRow('Kilométrage:', widget.car['mileagePolicy'], Icons.directions_car),
-        _buildInfoRow('Caution:', '${widget.car['deposit']} TND', Icons.monetization_on),
-        _buildInfoRow(
-            'Disponibilité:',
-            widget.car['isAvailable'] ? 'Disponible' : 'Non disponible',
-            widget.car['isAvailable'] ? Icons.check_circle : Icons.cancel,
-            color: widget.car['isAvailable'] ? Colors.green : Colors.red),
-        _buildInfoRow('Ajoutée le:', createdAt, Icons.access_time),
-      ],
-    ),
-  ),
-),
-
-            // Dates indisponibles
             if (hasUnavailableDates) ...[
               const SizedBox(height: 20),
-           ExpansionTile(
-  title: const Text(
-    'Dates indisponibles:',
-    style: TextStyle(
-      
-      fontSize: 18,
-      fontWeight: FontWeight.bold,
-      //color: Colors.blueGrey,
-    ),
-  ),
-  children: [
-    Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: _buildDateChips(widget.car['unavailableDates']),
-    ),
-  ],
-)
-
+              ExpansionTile(
+                title: Text(
+                  'Dates indisponibles:',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: theme.textTheme.bodyLarge?.color,
+                  ),
+                ),
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: _buildDateChips(widget.car['unavailableDates']),
+                  ),
+                ],
+              )
             ],
-
-            // Équipements
             const SizedBox(height: 20),
             ExpansionTile(
-  title: const Text(
-    'Équipements et caractéristiques:',
-    style: TextStyle(
-      fontSize: 18,
-      fontWeight: FontWeight.bold,
-    ),
-  ),
-  children: [
-    Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: (widget.car['features'] as List).map<Widget>((feature) {
-          return Chip(
-            label: Text(
-              feature,
-              style: const TextStyle(color: Colors.white),
+              title: Text(
+                'Équipements et caractéristiques:',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: theme.textTheme.bodyLarge?.color,
+                ),
+              ),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: (widget.car['features'] as List).map<Widget>((feature) {
+                      return Chip(
+                        label: Text(
+                          feature,
+                          style: TextStyle(color: theme.colorScheme.onSecondary),
+                        ),
+                        backgroundColor: theme.colorScheme.secondary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ],
             ),
-            backgroundColor: AppColors.primary,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          );
-        }).toList(),
-      ),
-    ),
-  ],
-)
-,
             const SizedBox(height: 20),
           ],
         ),

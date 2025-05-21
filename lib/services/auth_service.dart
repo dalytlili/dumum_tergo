@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 
 class AuthService {
-  static const String _baseUrl = 'http://127.0.0.1:9098/api';
+  static const String _baseUrl = 'https://dumum-tergo-backend.onrender.com/api';
 
 static Future<Map<String, dynamic>> register({
   required String name,

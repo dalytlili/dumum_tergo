@@ -26,7 +26,7 @@ class _SearchLocationFieldState extends State<SearchLocationField> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://127.0.0.1:9098/api/cars/searchLocations?query=$query'),
+        Uri.parse('https://dumum-tergo-backend.onrender.com/api/cars/searchLocations?query=$query'),
       );
 
       if (response.statusCode == 200) {

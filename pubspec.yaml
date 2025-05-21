@@ -50,17 +50,25 @@ dependencies:
   flutter_local_notifications: ^19.0.0
   audioplayers: ^6.4.0
   timeago: ^3.1.0
-
+  connectivity_plus: ^5.0.2
+  cached_network_image: ^3.4.1
+  flutter_svg: ^2.1.0
+  google_sign_in: ^6.3.0
+  carousel_slider: ^5.0.0
+  latlong2: ^0.9.1
+  flutter_map: ^8.1.1
+  geolocator: ^14.0.0
+  readmore: ^3.0.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
 
 flutter_launcher_icons:
-  android: true
+  android: "launcher_icon"
+  image_path: "assets/images/logo.png"
   ios: true
-  image_path: "web/icons/Icon-512.png"
-  adaptive_icon_background: "#ffffff"
+
 
 flutter:
   uses-material-design: true

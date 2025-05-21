@@ -5,9 +5,9 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
 class LogoutService {
-  final String apiUrl = 'http://127.0.0.1:9098/api/logout';
-  final String apiUrlSeller = 'http://127.0.0.1:9098/api/vendor/logout';
-  final String refreshTokenUrl = 'http://127.0.0.1:9098/api/refresh-token';
+  final String apiUrl = 'https://dumum-tergo-backend.onrender.com/api/logout';
+  final String apiUrlSeller = 'https://dumum-tergo-backend.onrender.com/api/vendor/logout';
+  final String refreshTokenUrl = 'https://dumum-tergo-backend.onrender.com/api/refresh-token';
 
   final FlutterSecureStorage storage = FlutterSecureStorage();
 

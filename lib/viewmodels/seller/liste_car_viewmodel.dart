@@ -28,7 +28,7 @@ class ListeCarViewModel with ChangeNotifier {
       }
 
       final response = await http.get(
-        Uri.parse("http://127.0.0.1:9098/api/cars/vendor"),
+        Uri.parse("https://dumum-tergo-backend.onrender.com/api/cars/vendor"),
         headers: {'Authorization': 'Bearer $token'},
       );
 

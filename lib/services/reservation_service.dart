@@ -31,7 +31,7 @@ class ReservationService {
   }) async {
     try {
       final token = await _getAuthToken();
-      if (token == null) throw Exception('Authentication token not found');
+      if (token == null) throw Exception('Token d\'authentification non trouvé');
 
       final response = await http.post(
         Uri.parse('$_baseUrl/api/reservation'),
@@ -56,24 +56,44 @@ class ReservationService {
       );
 
       if (response.statusCode == 201) {
-        return json.decode(response.body);
+        if (response.body.isEmpty) {
+          throw Exception('Réponse vide du serveur');
+        }
+
+        final decodedResponse = json.decode(response.body);
+        
+        if (decodedResponse is! Map<String, dynamic>) {
+          throw Exception('Format de réponse invalide');
+        }
+
+        // Gestion du cas où car est null
+        if (decodedResponse['car'] == null) {
+          decodedResponse['car'] = {
+            '_id': carId,
+            'brand': 'Inconnu',
+            'model': 'Inconnu',
+            'images': [],
+          };
+        }
+
+        return decodedResponse;
       } else {
         final errorBody = json.decode(response.body);
-        throw Exception(errorBody['message'] ?? 'Failed to create reservation');
+        throw Exception(errorBody['message'] ?? 'Échec de la réservation (${response.statusCode})');
       }
     } on http.ClientException catch (e) {
-      throw Exception('Network error: ${e.message}');
+      throw Exception('Erreur réseau: ${e.message}');
     } on FormatException catch (e) {
-      throw Exception('Data parsing error: ${e.message}');
+      throw Exception('Erreur de format: ${e.message}');
     } catch (e) {
-      throw Exception('Failed to create reservation: $e');
+      throw Exception('Échec de la réservation: $e');
     }
   }
 
   Future<List<dynamic>> getUserReservations() async {
     try {
       final token = await _getAuthToken();
-      if (token == null) throw Exception('Authentication token not found');
+      if (token == null) throw Exception('Token d\'authentification non trouvé');
 
       final response = await http.get(
         Uri.parse('$_baseUrl/api/reservation/user'),
@@ -84,17 +104,34 @@ class ReservationService {
       );
 
       if (response.statusCode == 200) {
-        return json.decode(response.body);
+        final decoded = json.decode(response.body);
+        
+        if (decoded is! List) {
+          throw Exception('Format de réponse invalide');
+        }
+
+        // Nettoyage des données pour gérer les valeurs null
+        return decoded.map((reservation) {
+          if (reservation['car'] == null) {
+            reservation['car'] = {
+              '_id': 'inconnu',
+              'brand': 'Inconnu',
+              'model': 'Inconnu',
+              'images': [],
+            };
+          }
+          return reservation;
+        }).toList();
       } else {
         final errorBody = json.decode(response.body);
-        throw Exception(errorBody['message'] ?? 'Failed to load reservations');
+        throw Exception(errorBody['message'] ?? 'Échec du chargement (${response.statusCode})');
       }
     } on http.ClientException catch (e) {
-      throw Exception('Network error: ${e.message}');
+      throw Exception('Erreur réseau: ${e.message}');
     } on FormatException catch (e) {
-      throw Exception('Data parsing error: ${e.message}');
+      throw Exception('Erreur de format: ${e.message}');
     } catch (e) {
-      throw Exception('Failed to get user reservations: $e');
+      throw Exception('Échec du chargement: $e');
     }
   }
 }

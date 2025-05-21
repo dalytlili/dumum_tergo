@@ -69,7 +69,7 @@ class SideMenuViewModel with ChangeNotifier {
 
   Future<http.Response> _makeProfileRequest(String token) async {
     return await http.get(
-      Uri.parse('http://127.0.0.1:9098/api/profile'),
+      Uri.parse('https://dumum-tergo-backend.onrender.com/api/profile'),
       headers: {'Authorization': 'Bearer $token'},
     );
   }
@@ -77,7 +77,7 @@ class SideMenuViewModel with ChangeNotifier {
   Future<Map<String, dynamic>> _refreshToken(String refreshToken) async {
     try {
       final response = await http.post(
-        Uri.parse('http://127.0.0.1:9098/api/refresh-token'),
+        Uri.parse('https://dumum-tergo-backend.onrender.com/api/refresh-token'),
                    headers: {'Authorization': 'Bearer $refreshToken'},
 
       );
@@ -129,7 +129,7 @@ class SideMenuViewModel with ChangeNotifier {
       } else if (userData['image'].startsWith('http')) {
         _profileImageUrl = userData['image'];
       } else {
-        _profileImageUrl = 'http://127.0.0.1:9098${userData['image']}';
+        _profileImageUrl = 'https://res.cloudinary.com/dcs2edizr/image/upload/${userData['image']}';
       }
 
       notifyListeners();

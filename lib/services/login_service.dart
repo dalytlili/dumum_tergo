@@ -25,7 +25,7 @@ if (isPhoneMode && countryCode != null) {
 }
 
   final response = await client.post(
-    Uri.parse('http://127.0.0.1:9098/api/login'),
+    Uri.parse('https://dumum-tergo-backend.onrender.com/api/login'),
     headers: {'Content-Type': 'application/json'},
     body: jsonEncode(body),
   );

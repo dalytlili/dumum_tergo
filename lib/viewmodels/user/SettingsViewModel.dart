@@ -110,7 +110,7 @@ showDialog(
             String? token = await storage.read(key: 'token');
 
             final response = await http.delete(
-              Uri.parse('http://127.0.0.1:9098/api/delete-account'),
+              Uri.parse('https://dumum-tergo-backend.onrender.com/api/delete-account'),
               headers: {
                 'Authorization': 'Bearer $token',
                 'Content-Type': 'application/json',

@@ -80,7 +80,7 @@ class _CampingItemDetailScreenState extends State<CampingItemDetailScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => FullScreenImageGallery(
-          images: widget.item.images.map((image) => 'http://localhost:9098/images/$image').toList(),
+          images: widget.item.images.map((image) => 'https://res.cloudinary.com/dcs2edizr/image/upload/$image').toList(),
           initialIndex: _currentImageIndex,
         ),
       ),
@@ -163,14 +163,7 @@ class _CampingItemDetailScreenState extends State<CampingItemDetailScreen> {
       appBar: AppBar(
         title: Text(widget.item.name),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.favorite_border),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.share),
-            onPressed: () {},
-          ),
+        
           PopupMenuButton(
             icon: const Icon(Icons.more_vert),
             itemBuilder: (context) => [
@@ -372,118 +365,131 @@ class _CampingItemDetailScreenState extends State<CampingItemDetailScreen> {
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            decoration: BoxDecoration(
-              color: surfaceColor,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 10,
-                  offset: const Offset(0, -5),
-                ),
-              ],
-              border: Border(
-                top: BorderSide(
-                  color: isDarkMode ? Colors.grey[800]! : Colors.grey[200]!,
-                  width: 1,
-                ),
-              ),
-            ),
-            child: Container(
-                  padding: const EdgeInsets.all(16),
+      Container(
+  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
   decoration: BoxDecoration(
-          color: Colors.grey[100],
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey[300]!),
-        ),
-              child: Row(
-                
-                children: [
-                  CircleAvatar(
-                    radius: 24,
-                    backgroundColor: Colors.grey[200],
-                    backgroundImage: NetworkImage(
-                      'http://localhost:9098${widget.item.vendor.image ?? 'default.jpg'}',
-                    ),
-                    onBackgroundImageError: (_, __) {},
-                  ),
-                  const SizedBox(width: 20),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.item.vendor.businessName,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 17,
-                            color: onSurfaceColor,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                    // Remplacez cette partie dans le footer
-              Row(
-                children: [
-                  Icon(Icons.star, color: Colors.amber, size: 16),
-                  const SizedBox(width: 4),
-                  FutureBuilder<Map<String, dynamic>>(
-                    future: _fetchVendorRatings(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return Text(
-              'Chargement...',
-              style: TextStyle(
-                color: Colors.grey,
-                fontSize: 12,
-              ),
-                        );
-                      }
-                      
-                      if (snapshot.hasError) {
-                        return Text(
-              'Erreur de chargement',
-              style: TextStyle(
-                color: Colors.grey,
-                fontSize: 12,
-              ),
-                        );
-                      }
-                      
-                      final averageRating = snapshot.data?['averageRating'] ?? 0.0;
-                      final ratingCount = snapshot.data?['ratingCount'] ?? 0;
-                      
-                      return Text(
-                        '${averageRating.toStringAsFixed(1)} ($ratingCount avis)',
-                        style: TextStyle(
-              color: Colors.grey,
-              fontSize: 12,
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: primaryColor,
-                    ),
-                    child: IconButton(
-                      icon: const Icon(Icons.phone, color: Colors.white, size: 26),
-                      onPressed: () => _callVendor(context, widget.item.vendor.mobile),
-                    ),
-                  ),
-                ],
-                
-              ),
-            ),
-
-            
+    color: Theme.of(context).colorScheme.surface,
+    boxShadow: [
+      BoxShadow(
+        color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
+        blurRadius: 10,
+        offset: const Offset(0, -5),
+      ),
+    ],
+    border: Border(
+      top: BorderSide(
+        color: Theme.of(context).dividerColor,
+        width: 1,
+      ),
+    ),
+  ),
+  child: Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Theme.of(context).colorScheme.surfaceVariant,
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(
+        color: Theme.of(context).dividerColor,
+      ),
+    ),
+    child: Row(
+      children: [
+        CircleAvatar(
+          radius: 24,
+          
+          backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
+          backgroundImage: NetworkImage(
+            'https://dumum-tergo-backend.onrender.com${widget.item.vendor.image ?? 'default.jpg'}',
           ),
+          onBackgroundImageError: (_, __) => const Icon(Icons.person, size: 24),
+          child: widget.item.vendor.image == null
+              ? Text(
+                  widget.item.vendor.businessName.isNotEmpty
+                      ? widget.item.vendor.businessName[0].toUpperCase()
+                      : '?',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSecondaryContainer,
+                    fontWeight: FontWeight.bold,
+                  ),
+                )
+              : null,
+        ),
+        const SizedBox(width: 20),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.item.vendor.businessName,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 4),
+              FutureBuilder<Map<String, dynamic>>(
+                future: _fetchVendorRatings(),
+                builder: (context, snapshot) {
+                  final textStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      );
+                  
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Row(
+                      children: [
+                        Icon(Icons.star, color: Colors.amber, size: 16),
+                        const SizedBox(width: 4),
+                        Text('Chargement...', style: textStyle),
+                      ],
+                    );
+                  }
+                  
+                  if (snapshot.hasError) {
+                    return Row(
+                      children: [
+                        Icon(Icons.error_outline, color: Theme.of(context).colorScheme.error, size: 16),
+                        const SizedBox(width: 4),
+                        Text('Erreur de chargement', style: textStyle),
+                      ],
+                    );
+                  }
+                  
+                  final averageRating = snapshot.data?['averageRating'] ?? 0.0;
+                  final ratingCount = snapshot.data?['ratingCount'] ?? 0;
+                  
+                  return Row(
+                    children: [
+                      Icon(Icons.star, color: Colors.amber, size: 16),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${averageRating.toStringAsFixed(1)} ($ratingCount ${ratingCount == 1 ? 'avis' : 'avis'})',
+                        style: textStyle,
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+        IconButton(
+          icon: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            child: Icon(
+              Icons.phone,
+              color: Theme.of(context).colorScheme.onPrimary,
+              size: 24,
+            ),
+          ),
+          onPressed: () => _callVendor(context, widget.item.vendor.mobile),
+        ),
+      ],
+    ),
+  ),
+),
           
         ],
         
@@ -507,7 +513,7 @@ class _CampingItemDetailScreenState extends State<CampingItemDetailScreen> {
                 color: Colors.grey[200],
                 alignment: Alignment.center,
                 child: Image.network(
-                  'http://localhost:9098/images/${widget.item.images.isNotEmpty ? widget.item.images[_currentImageIndex] : 'default.jpg'}',
+                  'https://res.cloudinary.com/dcs2edizr/image/upload/${widget.item.images.isNotEmpty ? widget.item.images[_currentImageIndex] : 'default.jpg'}',
                   fit: BoxFit.contain,
                   loadingBuilder: (context, child, loadingProgress) {
                     if (loadingProgress == null) return child;
@@ -575,7 +581,7 @@ class _CampingItemDetailScreenState extends State<CampingItemDetailScreen> {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(6),
                       child: Image.network(
-                        'http://localhost:9098/images/${widget.item.images[index]}',
+                        'https://res.cloudinary.com/dcs2edizr/image/upload/${widget.item.images[index]}',
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) => Container(
                           color: Colors.grey[200],
@@ -617,7 +623,7 @@ Widget _buildVendorRatingSection() {
             CircleAvatar(
               radius: 30,
               backgroundImage: NetworkImage(
-                'http://localhost:9098${widget.item.vendor.image ?? 'default.jpg'}',
+                'https://res.cloudinary.com/dcs2edizr/image/upload/${widget.item.vendor.image ?? 'default.jpg'}',
               ),
               onBackgroundImageError: (_, __) {},
             ),
@@ -797,7 +803,7 @@ Future<Map<String, dynamic>> _fetchVendorRatings() async {
         final token = await storage.read(key: 'token');
 
   final response = await http.get(
-    Uri.parse('http://127.0.0.1:9098/api/vendor/${widget.item.vendor.id}/ratings'),
+    Uri.parse('https://dumum-tergo-backend.onrender.com/api/vendor/${widget.item.vendor.id}/ratings'),
     headers: {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $token', // Remplacez par votre token
@@ -815,7 +821,7 @@ Future<void> _submitRating(int rating) async {
           final token = await storage.read(key: 'token');
 
   final response = await http.post(
-    Uri.parse('http://127.0.0.1:9098/api/vendor/${widget.item.vendor.id}/ratings'),
+    Uri.parse('https://dumum-tergo-backend.onrender.com/api/vendor/${widget.item.vendor.id}/ratings'),
     headers: {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $token', // Remplacez par votre token
@@ -830,33 +836,64 @@ Future<void> _submitRating(int rating) async {
   }
 }
 
-  Widget _buildReportSection() {
-    return GestureDetector(
-      onTap: _showReportDialog,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.grey[100],
+Widget _buildReportSection() {
+  return Builder(
+    builder: (context) {
+      final theme = Theme.of(context);
+      final isDarkMode = theme.brightness == Brightness.dark;
+      final colors = theme.colorScheme;
+      
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+        child: Material(
+          color: isDarkMode 
+              ? colors.surfaceVariant.withOpacity(0.6)
+              : colors.errorContainer.withOpacity(0.1),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey[300]!),
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.report, color: Colors.red[400]),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Text(
-                'Signaler cette publication',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: _showReportDialog,
+            splashColor: colors.error.withOpacity(0.1),
+            highlightColor: colors.error.withOpacity(0.05),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isDarkMode 
+                      ? colors.outline 
+                      : colors.errorContainer,
+                  width: 0.5,
                 ),
               ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.report_gmailerrorred_outlined,
+                    color: colors.error,
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Signaler cette publication',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w500,
+                        color: colors.error,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                            color: isDarkMode ? Colors.grey[800] : Colors.grey[100],
+                  ),
+                ],
+              ),
             ),
-            Icon(Icons.chevron_right, color: Colors.grey[500]),
-          ],
+          ),
         ),
-      ),
-    );
-  }
+      );
+    },
+  );
+}
 }

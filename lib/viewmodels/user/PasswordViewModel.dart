@@ -30,7 +30,7 @@ class PasswordViewModel extends ChangeNotifier {
 
     try {
       final response = await http.post(
-        Uri.parse('http://127.0.0.1:9098/api/reset-password'),
+        Uri.parse('https://dumum-tergo-backend.onrender.com/api/reset-password'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'user_id': userId, // Envoyer user_id avec le mot de passe

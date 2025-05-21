@@ -41,6 +41,7 @@ class _AddCampingItemPageState extends State<AddCampingItemPage> {
   bool isForRent = false;
   int _currentStep = 0;
   bool _isEditing = false;
+  bool _isLoading = false;
 
   final List<String> categories = [
     'Tentes',
@@ -85,15 +86,17 @@ class _AddCampingItemPageState extends State<AddCampingItemPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDarkMode ? Colors.grey[900] : Colors.white,
       appBar: AppBar(
         title: Text(_isEditing ? 'Modifier l\'article' : 'Ajouter un article de camping'),
-        backgroundColor: Colors.grey[100],
+        backgroundColor: isDarkMode ? Colors.grey[850] : Colors.grey[100],
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.of(context).pop(),
+        iconTheme: IconThemeData(
+          color: isDarkMode ? Colors.white : Colors.black,
         ),
       ),
       body: Column(
@@ -103,300 +106,341 @@ class _AddCampingItemPageState extends State<AddCampingItemPage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _buildStepIndicator(0, 'Infos'),
+                _buildStepIndicator(0, 'Infos', isDarkMode),
                 SizedBox(width: 16),
-                _buildStepIndicator(1, 'Prix'),
+                _buildStepIndicator(1, 'Prix', isDarkMode),
                 SizedBox(width: 16),
-                _buildStepIndicator(2, 'Photos'),
+                _buildStepIndicator(2, 'Photos', isDarkMode),
               ],
             ),
           ),
           
           Expanded(
-            child: Stepper(
-              currentStep: _currentStep,
-              onStepContinue: _continue,
-              onStepCancel: _cancel,
-              onStepTapped: (step) => setState(() => _currentStep = step),
-              controlsBuilder: (context, details) {
-                return Container(
-                  margin: EdgeInsets.only(top: 16),
-                  child: Row(
-                    children: [
-                      if (_currentStep != 0)
+            child: Theme(
+              data: theme.copyWith(
+                colorScheme: theme.colorScheme.copyWith(
+                  primary: AppColors.primary,
+                  surface: isDarkMode ? Colors.grey[800] : Colors.white,
+                ),
+              ),
+              child: Stepper(
+                currentStep: _currentStep,
+                onStepContinue: _continue,
+                onStepCancel: _cancel,
+                onStepTapped: (step) => setState(() => _currentStep = step),
+                controlsBuilder: (context, details) {
+                  return Container(
+                    margin: EdgeInsets.only(top: 16),
+                    child: Row(
+                      children: [
+                        if (_currentStep != 0)
+                          Expanded(
+                            child: OutlinedButton(
+                              style: ElevatedButton.styleFrom(
+                                padding: EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                side: BorderSide(
+                                  color: isDarkMode ? Colors.grey[600]! : Colors.grey[300]!,
+                                ),
+                              ),
+                              onPressed: details.onStepCancel,
+                              child: Text(
+                                'Retour',
+                                style: TextStyle(
+                                  color: isDarkMode ? Colors.white : Colors.black,
+                                ),
+                              ),
+                            ),
+                          ),
+                        if (_currentStep != 0) SizedBox(width: 16),
                         Expanded(
-                          child: OutlinedButton(
+                          child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              padding: EdgeInsets.symmetric(vertical: 16),
+                              backgroundColor: AppColors.primary,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
+                              padding: EdgeInsets.symmetric(vertical: 16),
                             ),
-                            onPressed: details.onStepCancel,
-                            child: Text('Retour'),
+                            onPressed: _isLoading ? null : details.onStepContinue,
+                            child: _isLoading
+                                ? SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : Text(
+                                    _currentStep == 2 
+                                      ? (_isEditing ? 'Modifier' : 'Publier') 
+                                      : 'Continuer',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
                           ),
                         ),
-                      if (_currentStep != 0) SizedBox(width: 16),
-                      Expanded(
-                        child: ElevatedButton(
+                      ],
+                    ),
+                  );
+                },
+                steps: [
+                  Step(
+                    title: Text('Informations', style: TextStyle(color: isDarkMode ? Colors.white : Colors.black)),
+                    content: Column(
+                      children: [
+                        SizedBox(height: 6),
+                        TextFormField(
+                          controller: _nameController,
+                          style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
+                          decoration: _buildInputDecoration('Nom de l\'article*', isDarkMode),
+                        ),
+                        SizedBox(height: 16),
+                        TextFormField(
+                          controller: _descriptionController,
+                          style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
+                          maxLines: 3,
+                          decoration: _buildInputDecoration('Description*', isDarkMode),
+                        ),
+                        SizedBox(height: 16),
+                        DropdownButtonFormField<String>(
+                          value: selectedCategory,
+                          dropdownColor: isDarkMode ? Colors.grey[800] : Colors.white,
+                          style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
+                          decoration: _buildInputDecoration('Catégorie*', isDarkMode),
+                          items: categories.map((category) {
+                            return DropdownMenuItem(
+                              value: category,
+                              child: Text(category, style: TextStyle(color: isDarkMode ? Colors.white : Colors.black)),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              selectedCategory = value;
+                            });
+                          },
+                        ),
+                        SizedBox(height: 16),
+                        DropdownButtonFormField<String>(
+                          value: selectedCondition,
+                          dropdownColor: isDarkMode ? Colors.grey[800] : Colors.white,
+                          style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
+                          decoration: _buildInputDecoration('État*', isDarkMode),
+                          items: conditions.map((condition) {
+                            return DropdownMenuItem(
+                              value: condition,
+                              child: Text(condition, style: TextStyle(color: isDarkMode ? Colors.white : Colors.black)),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              selectedCondition = value;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                    isActive: _currentStep >= 0,
+                    state: _currentStep >= 0 
+                        ? (_validateStep1() ? StepState.complete : StepState.editing)
+                        : StepState.disabled,
+                  ),
+
+                  Step(
+                    title: Text('Prix et options', style: TextStyle(color: isDarkMode ? Colors.white : Colors.black)),
+                    content: Column(
+                      children: [
+                        SwitchListTile(
+                          title: Text('À vendre', style: TextStyle(color: isDarkMode ? Colors.white : Colors.black)),
+                          value: isForSale,
+                          onChanged: (value) {
+                            setState(() {
+                              isForSale = value;
+                              if (!value && !isForRent) {
+                                isForRent = true;
+                              }
+                            });
+                          },
+                          activeColor: AppColors.primary,
+                          inactiveTrackColor: isDarkMode ? Colors.grey[600] : null,
+                        ),
+                        if (isForSale) ...[
+                          SizedBox(height: 8),
+                          TextFormField(
+                            controller: _priceController,
+                            style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
+                            keyboardType: TextInputType.number,
+                            decoration: _buildInputDecoration('Prix de vente (TND)*', isDarkMode),
+                          ),
+                        ],
+                        SwitchListTile(
+                          title: Text('À louer', style: TextStyle(color: isDarkMode ? Colors.white : Colors.black)),
+                          value: isForRent,
+                          onChanged: (value) {
+                            setState(() {
+                              isForRent = value;
+                              if (!value && !isForSale) {
+                                isForSale = true;
+                              }
+                            });
+                          },
+                          activeColor: AppColors.primary,
+                          inactiveTrackColor: isDarkMode ? Colors.grey[600] : null,
+                        ),
+                        if (isForRent) ...[
+                          SizedBox(height: 8),
+                          TextFormField(
+                            controller: _rentalPriceController,
+                            style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
+                            keyboardType: TextInputType.number,
+                            decoration: _buildInputDecoration('Prix de location (TND/jour)*', isDarkMode),
+                          ),
+                        ],
+                        SizedBox(height: 16),
+                        SearchLocationField(controller: _locationController),
+                      ],
+                    ),
+                    isActive: _currentStep >= 1,
+                    state: _currentStep >= 1 
+                        ? (_validateStep2() ? StepState.complete : StepState.editing)
+                        : StepState.disabled,
+                  ),
+
+                  Step(
+                    title: Text('Photos', style: TextStyle(color: isDarkMode ? Colors.white : Colors.black)),
+                    content: Column(
+                      children: [
+                        ElevatedButton(
+                          onPressed: _pickImages,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          onPressed: details.onStepContinue,
-                          child: Text(_currentStep == 2 
-                              ? (_isEditing ? 'Modifier' : 'Publier') 
-                              : 'Continuer'),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-              steps: [
-                Step(
-                  title: Text('Informations'),
-                  content: Column(
-                    children: [
-                      SizedBox(height: 6),
-                      TextFormField(
-                        controller: _nameController,
-                        decoration: _buildInputDecoration('Nom de l\'article*'),
-                      ),
-                      SizedBox(height: 16),
-                      TextFormField(
-                        controller: _descriptionController,
-                        maxLines: 3,
-                        decoration: _buildInputDecoration('Description*'),
-                      ),
-                      SizedBox(height: 16),
-                      DropdownButtonFormField<String>(
-                        value: selectedCategory,
-                        decoration: _buildInputDecoration('Catégorie*'),
-                        items: categories.map((category) {
-                          return DropdownMenuItem(
-                            value: category,
-                            child: Text(category),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            selectedCategory = value;
-                          });
-                        },
-                      ),
-                      SizedBox(height: 16),
-                      DropdownButtonFormField<String>(
-                        value: selectedCondition,
-                        decoration: _buildInputDecoration('État*'),
-                        items: conditions.map((condition) {
-                          return DropdownMenuItem(
-                            value: condition,
-                            child: Text(condition),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            selectedCondition = value;
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                  isActive: _currentStep >= 0,
-                  state: _currentStep >= 0 
-                      ? (_validateStep1() ? StepState.complete : StepState.editing)
-                      : StepState.disabled,
-                ),
-
-                Step(
-                  title: Text('Prix et options'),
-                  content: Column(
-                    children: [
-                      SwitchListTile(
-                        title: Text('À vendre'),
-                        value: isForSale,
-                        onChanged: (value) {
-                          setState(() {
-                            isForSale = value;
-                            if (!value && !isForRent) {
-                              isForRent = true;
-                            }
-                          });
-                        },
-                        activeColor: AppColors.primary,
-                      ),
-                      if (isForSale) ...[
-                        SizedBox(height: 8),
-                        TextFormField(
-                          controller: _priceController,
-                          keyboardType: TextInputType.number,
-                          decoration: _buildInputDecoration('Prix de vente (TND)*'),
-                        ),
-                      ],
-                      SwitchListTile(
-                        title: Text('À louer'),
-                        value: isForRent,
-                        onChanged: (value) {
-                          setState(() {
-                            isForRent = value;
-                            if (!value && !isForSale) {
-                              isForSale = true;
-                            }
-                          });
-                        },
-                        activeColor: AppColors.primary,
-                      ),
-                      if (isForRent) ...[
-                        SizedBox(height: 8),
-                        TextFormField(
-                          controller: _rentalPriceController,
-                          keyboardType: TextInputType.number,
-                          decoration: _buildInputDecoration('Prix de location (TND/jour)*'),
-                        ),
-                      ],
-                      SizedBox(height: 16),
-                      SearchLocationField(controller: _locationController),
-                    ],
-                  ),
-                  isActive: _currentStep >= 1,
-                  state: _currentStep >= 1 
-                      ? (_validateStep2() ? StepState.complete : StepState.editing)
-                      : StepState.disabled,
-                ),
-
-                Step(
-                  title: Text('Photos'),
-                  content: Column(
-                    children: [
-                      ElevatedButton(
-                        onPressed: _pickImages,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.add_a_photo, color: Colors.white),
+                              SizedBox(width: 8),
+                              Text('Ajouter des photos', style: TextStyle(color: Colors.white)),
+                            ],
                           ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.add_a_photo, color: Colors.white),
-                            SizedBox(width: 8),
-                            Text('Ajouter des photos', style: TextStyle(color: Colors.white)),
-                          ],
-                        ),
-                      ),
-                      SizedBox(height: 16),
-                      
-                      if (_isEditing && _existingImageUrls.isNotEmpty)
-                        GridView.builder(
-                          shrinkWrap: true,
-                          physics: NeverScrollableScrollPhysics(),
-                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 3,
-                            crossAxisSpacing: 8,
-                            mainAxisSpacing: 8,
-                          ),
-                          itemCount: _existingImageUrls.length,
-                          itemBuilder: (context, index) {
-                            return Stack(
-                              children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: Image.network(
-                                    'http://localhost:9098/images/${_existingImageUrls[index]}',
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) => 
-                                      Icon(Icons.broken_image, size: 40),
+                        SizedBox(height: 16),
+                        
+                        if (_isEditing && _existingImageUrls.isNotEmpty)
+                          GridView.builder(
+                            shrinkWrap: true,
+                            physics: NeverScrollableScrollPhysics(),
+                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 3,
+                              crossAxisSpacing: 8,
+                              mainAxisSpacing: 8,
+                            ),
+                            itemCount: _existingImageUrls.length,
+                            itemBuilder: (context, index) {
+                              return Stack(
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Image.network(
+                                      'https://dumum-tergo-backend.onrender.com/images/${_existingImageUrls[index]}',
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) => 
+                                        Icon(Icons.broken_image, size: 40, color: isDarkMode ? Colors.white : Colors.black),
+                                    ),
                                   ),
-                                ),
-                                Positioned(
-                                  top: 4,
-                                  right: 4,
-                                  child: GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        _imagesToDelete.add(_existingImageUrls[index]);
-                                        _existingImageUrls.removeAt(index);
-                                      });
-                                    },
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Icon(
-                                        Icons.close,
-                                        color: Colors.red,
-                                        size: 20,
+                                  Positioned(
+                                    top: 4,
+                                    right: 4,
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        setState(() {
+                                          _imagesToDelete.add(_existingImageUrls[index]);
+                                          _existingImageUrls.removeAt(index);
+                                        });
+                                      },
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          color: isDarkMode ? Colors.grey[800]! : Colors.white,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Icon(
+                                          Icons.close,
+                                          color: Colors.red,
+                                          size: 20,
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                      
-                      if (_itemImages.isNotEmpty)
-                        GridView.builder(
-                          shrinkWrap: true,
-                          physics: NeverScrollableScrollPhysics(),
-                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 3,
-                            crossAxisSpacing: 8,
-                            mainAxisSpacing: 8,
+                                ],
+                              );
+                            },
                           ),
-                          itemCount: _itemImages.length,
-                          itemBuilder: (context, index) {
-                            return Stack(
-                              children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: Image.file(
-                                    File(_itemImages[index].path),
-                                    fit: BoxFit.cover,
+                        
+                        if (_itemImages.isNotEmpty)
+                          GridView.builder(
+                            shrinkWrap: true,
+                            physics: NeverScrollableScrollPhysics(),
+                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 3,
+                              crossAxisSpacing: 8,
+                              mainAxisSpacing: 8,
+                            ),
+                            itemCount: _itemImages.length,
+                            itemBuilder: (context, index) {
+                              return Stack(
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Image.file(
+                                      File(_itemImages[index].path),
+                                      fit: BoxFit.cover,
+                                    ),
                                   ),
-                                ),
-                                Positioned(
-                                  top: 4,
-                                  right: 4,
-                                  child: GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        _itemImages.removeAt(index);
-                                      });
-                                    },
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Icon(
-                                        Icons.close,
-                                        color: Colors.red,
-                                        size: 20,
+                                  Positioned(
+                                    top: 4,
+                                    right: 4,
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        setState(() {
+                                          _itemImages.removeAt(index);
+                                        });
+                                      },
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          color: isDarkMode ? Colors.grey[800]! : Colors.white,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Icon(
+                                          Icons.close,
+                                          color: Colors.red,
+                                          size: 20,
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                      
-                      if ((!_isEditing || _existingImageUrls.isEmpty) && _itemImages.isEmpty)
-                        Text('Aucune photo sélectionnée', style: TextStyle(color: Colors.grey)),
-                    ],
+                                ],
+                              );
+                            },
+                          ),
+                        
+                        if ((!_isEditing || _existingImageUrls.isEmpty) && _itemImages.isEmpty)
+                          Text(
+                            'Aucune photo sélectionnée', 
+                            style: TextStyle(color: isDarkMode ? Colors.grey[400] : Colors.grey)),
+                      ],
+                    ),
+                    isActive: _currentStep >= 2,
+                    state: _currentStep >= 2 
+                        ? (_validateStep3() ? StepState.complete : StepState.editing)
+                        : StepState.disabled,
                   ),
-                  isActive: _currentStep >= 2,
-                  state: _currentStep >= 2 
-                      ? (_validateStep3() ? StepState.complete : StepState.editing)
-                      : StepState.disabled,
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
@@ -404,21 +448,21 @@ class _AddCampingItemPageState extends State<AddCampingItemPage> {
     );
   }
 
-  Widget _buildStepIndicator(int stepNumber, String label) {
+  Widget _buildStepIndicator(int stepNumber, String label, bool isDarkMode) {
     return Column(
       children: [
         Container(
           width: 30,
           height: 30,
           decoration: BoxDecoration(
-            color: _currentStep >= stepNumber ? AppColors.primary : Colors.grey[300],
+            color: _currentStep >= stepNumber ? AppColors.primary : isDarkMode ? Colors.grey[700] : Colors.grey[300],
             shape: BoxShape.circle,
           ),
           child: Center(
             child: Text(
               (stepNumber + 1).toString(),
               style: TextStyle(
-                color: _currentStep >= stepNumber ? Colors.white : Colors.grey[700],
+                color: _currentStep >= stepNumber ? Colors.white : isDarkMode ? Colors.white : Colors.grey[700],
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -428,7 +472,7 @@ class _AddCampingItemPageState extends State<AddCampingItemPage> {
         Text(
           label,
           style: TextStyle(
-            color: _currentStep >= stepNumber ? AppColors.primary : Colors.grey,
+            color: _currentStep >= stepNumber ? AppColors.primary : isDarkMode ? Colors.grey[400] : Colors.grey,
             fontWeight: _currentStep == stepNumber ? FontWeight.bold : FontWeight.normal,
           ),
         ),
@@ -436,23 +480,25 @@ class _AddCampingItemPageState extends State<AddCampingItemPage> {
     );
   }
 
-  InputDecoration _buildInputDecoration(String label) {
+  InputDecoration _buildInputDecoration(String label, bool isDarkMode) {
     return InputDecoration(
       labelText: label,
+      labelStyle: TextStyle(color: isDarkMode ? Colors.grey[400] : Colors.grey[700]),
+      hintStyle: TextStyle(color: isDarkMode ? Colors.grey[400] : Colors.grey[500]),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey[300]!),
+        borderSide: BorderSide(color: isDarkMode ? Colors.grey[600]! : Colors.grey[300]!),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey[300]!),
+        borderSide: BorderSide(color: isDarkMode ? Colors.grey[600]! : Colors.grey[300]!),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(color: AppColors.primary, width: 2),
       ),
       filled: true,
-      fillColor: Colors.grey[50],
+      fillColor: isDarkMode ? Colors.grey[800]! : Colors.grey[50]!,
     );
   }
 
@@ -522,8 +568,15 @@ class _AddCampingItemPageState extends State<AddCampingItemPage> {
       return;
     }
 
+    setState(() {
+      _isLoading = true;
+    });
+
     final token = await storage.read(key: 'seller_token');
     if (token == null) {
+      setState(() {
+        _isLoading = false;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Session expirée, veuillez vous reconnecter')),
       );
@@ -531,8 +584,8 @@ class _AddCampingItemPageState extends State<AddCampingItemPage> {
     }
 
     final url = _isEditing 
-        ? 'http://localhost:9098/api/camping/items/${widget.itemToEdit!.id}'
-        : 'http://localhost:9098/api/camping/items';
+        ? 'https://dumum-tergo-backend.onrender.com/api/camping/items/${widget.itemToEdit!.id}'
+        : 'https://dumum-tergo-backend.onrender.com/api/camping/items';
         
     var request = _isEditing
         ? http.MultipartRequest('PUT', Uri.parse(url))
@@ -576,6 +629,10 @@ class _AddCampingItemPageState extends State<AddCampingItemPage> {
       final response = await request.send();
       final responseBody = await response.stream.bytesToString();
 
+      setState(() {
+        _isLoading = false;
+      });
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(_isEditing 
@@ -594,18 +651,30 @@ class _AddCampingItemPageState extends State<AddCampingItemPage> {
         );
       }
     } on SocketException {
+      setState(() {
+        _isLoading = false;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Pas de connexion internet')),
       );
     } on HttpException {
+      setState(() {
+        _isLoading = false;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Erreur de serveur')),
       );
     } on FormatException {
+      setState(() {
+        _isLoading = false;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Erreur de format de données')),
       );
     } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Erreur inattendue: ${e.toString()}')),
       );

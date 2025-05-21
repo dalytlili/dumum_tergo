@@ -18,45 +18,43 @@ class CampingItemCardSeller extends StatelessWidget {
     this.onMarkAsSold,
   });
 
-// Dans CampingItemCardSeller
-@override
-Widget build(BuildContext context) {
-  return ChangeNotifierProvider(
-    create: (_) => CampingItemCardSellerViewModel(
-      item: item,
-      onDeleteCallback: onDelete,
-      onEditCallback: () => _openEditPage(context),
-      onMarkAsSoldCallback: onMarkAsSold,
-    ),
-    child: Consumer<CampingItemCardSellerViewModel>(
-      builder: (context, viewModel, child) {
-        return Card(
-          margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-          elevation: 1,
-            color: Colors.white, // خلفية شفافة
-
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-            
-          ),
-          child: InkWell(
-             borderRadius: BorderRadius.circular(8),
-  splashColor: Colors.black12,
-  highlightColor: Colors.transparent,
-            onTap: () => viewModel.navigateToDetail(context),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildImageStack(context, viewModel),
-                _buildItemDetails(viewModel),
-              ],
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => CampingItemCardSellerViewModel(
+        item: item,
+        onDeleteCallback: onDelete,
+        onEditCallback: () => _openEditPage(context),
+        onMarkAsSoldCallback: onMarkAsSold,
+      ),
+      child: Consumer<CampingItemCardSellerViewModel>(
+        builder: (context, viewModel, child) {
+          final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+          return Card(
+            margin: const EdgeInsets.symmetric(vertical: 0, horizontal: 4),
+            elevation: 1,
+            color: isDarkMode ? Colors.grey[850] : Colors.white, // Couleur de fond dynamique
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
             ),
-          ),
-        );
-      },
-    ),
-  );
-}
+            child: InkWell(
+              borderRadius: BorderRadius.circular(8),
+              splashColor: Colors.black12,
+              highlightColor: Colors.transparent,
+              onTap: () => viewModel.navigateToDetail(context),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildImageStack(context, viewModel),
+                  _buildItemDetails(viewModel, isDarkMode),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
 
   void _openEditPage(BuildContext context) {
     Navigator.push(
@@ -88,7 +86,7 @@ Widget build(BuildContext context) {
         width: double.infinity,
         color: Colors.grey[200],
         child: Image.network(
-          'http://localhost:9098/images/${item.images.isNotEmpty ? item.images[0] : 'default.jpg'}',
+          'https://res.cloudinary.com/dcs2edizr/image/upload/${item.images.isNotEmpty ? item.images[0] : 'default.jpg'}',
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) => Center(
             child: Icon(Icons.image_not_supported, size: 40, color: Colors.grey[400]),
@@ -178,22 +176,21 @@ Widget build(BuildContext context) {
     ];
   }
 
-  Padding _buildItemDetails(CampingItemCardSellerViewModel viewModel) {
+  Padding _buildItemDetails(CampingItemCardSellerViewModel viewModel, bool isDarkMode) {
     return Padding(
       padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-  item.name,
-  style: const TextStyle(
-    fontWeight: FontWeight.w600,
-    fontSize: 18,
-    color: Colors.black,
-    letterSpacing: 0.5,
-  ),
-),
-
+            item.name,
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 18,
+              color: isDarkMode ? Colors.white : Colors.black, // Couleur dynamique
+              letterSpacing: 0.5,
+            ),
+          ),
           const SizedBox(height: 8),
           _buildPriceInfo(),
           const SizedBox(height: 8),

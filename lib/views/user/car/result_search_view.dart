@@ -28,12 +28,7 @@ class ResultSearchView extends StatelessWidget {
         appBar: AppBar(
           title: const Text('Résultats de recherche'),
           actions: [
-            IconButton(
-              icon: const Icon(Icons.filter_alt),
-              onPressed: () {
-                // Ouvrir les filtres
-              },
-            ),
+         
           ],
         ),
         body: Consumer<ResultSearchViewModel>(
@@ -142,7 +137,7 @@ class ResultSearchView extends StatelessWidget {
 
 Widget _buildCarCard(Map<String, dynamic> car, BuildContext context) {
   // Définir l'URL de base du serveur
-  const String baseUrl = "http://127.0.0.1:9098/images/";
+  const String baseUrl = "https://res.cloudinary.com/dcs2edizr/image/upload/";
 
   // Construire la liste des URLs complètes
   List<String> images = (car['images'] as List<dynamic>?)

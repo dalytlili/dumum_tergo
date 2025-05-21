@@ -1,5 +1,5 @@
 // lib/constants/api_constants.dart
 class ApiConstants {
-  static const String baseUrl = "http://127.0.0.1:9098";
+  static const String baseUrl = "https://dumum-tergo-backend.onrender.com";
   static const String reservationsEndpoint = "$baseUrl/api/reservation";
 }

@@ -1,11 +1,11 @@
 import 'package:dumum_tergo/constants/colors.dart';
-import 'package:dumum_tergo/views/seller/car/car-reservations-page.dart';
-import 'package:dumum_tergo/views/user/car/reservation_page.dart';
+import 'package:dumum_tergo/views/user/car/reservation_details_page.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:timeago/timeago.dart' as timeago;
+import 'package:intl/intl.dart';
 
 class NotificationsUserPage extends StatefulWidget {
   final VoidCallback? onNotificationsRead;
@@ -26,11 +26,16 @@ class NotificationsUserPage extends StatefulWidget {
 class _NotificationsUserPageState extends State<NotificationsUserPage> {
   final FlutterSecureStorage storage = FlutterSecureStorage();
   final ScrollController _scrollController = ScrollController();
+  bool _isOpeningDetails = false; // Ajoutez cette ligne
 
   List<Map<String, dynamic>> _notifications = [];
+  List<Map<String, dynamic>> _todayNotifications = [];
+  List<Map<String, dynamic>> _earlierNotifications = [];
   bool _isLoading = true;
   String? _error;
   bool _hasNewNotifications = false;
+  bool _showAllEarlier = false;
+  final int _earlierLimit = 5;
 
   @override
   void initState() {
@@ -52,6 +57,21 @@ class _NotificationsUserPageState extends State<NotificationsUserPage> {
     }
   }
 
+  void _categorizeNotifications() {
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+    
+    _todayNotifications = _notifications.where((n) {
+      final createdAt = n['createdAt'] != null ? DateTime.parse(n['createdAt']) : now;
+      return createdAt.isAfter(todayStart);
+    }).toList();
+
+    _earlierNotifications = _notifications.where((n) {
+      final createdAt = n['createdAt'] != null ? DateTime.parse(n['createdAt']) : now;
+      return createdAt.isBefore(todayStart);
+    }).toList();
+  }
+
   Future<void> _loadNotifications() async {
     setState(() {
       _isLoading = true;
@@ -66,7 +86,7 @@ class _NotificationsUserPageState extends State<NotificationsUserPage> {
       }
 
       final response = await http.get(
-        Uri.parse('http://127.0.0.1:9098/api/notifications/user'),
+        Uri.parse('https://dumum-tergo-backend.onrender.com/api/notifications/user'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -77,6 +97,7 @@ class _NotificationsUserPageState extends State<NotificationsUserPage> {
         final List<dynamic> data = json.decode(response.body);
         setState(() {
           _notifications = data.cast<Map<String, dynamic>>();
+          _categorizeNotifications();
           _isLoading = false;
           _hasNewNotifications = _notifications.any((n) => n['readAt'] == null);
           
@@ -96,6 +117,33 @@ class _NotificationsUserPageState extends State<NotificationsUserPage> {
         _error = e.toString();
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _markAsRead(String notificationId) async {
+    try {
+      String? token = await storage.read(key: 'token');
+      if (token == null) throw Exception('Token non trouvé');
+
+      final response = await http.put(
+        Uri.parse('https://dumum-tergo-backend.onrender.com/api/notifications/user/$notificationId/read'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          final index = _notifications.indexWhere((n) => n['_id'] == notificationId);
+          if (index != -1) {
+            _notifications[index]['read'] = true;
+            _categorizeNotifications();
+          }
+        });
+      }
+    } catch (e) {
+      print('Erreur lors du marquage de la notification comme lue: $e');
     }
   }
 
@@ -195,20 +243,66 @@ class _NotificationsUserPageState extends State<NotificationsUserPage> {
     return RefreshIndicator(
       onRefresh: _loadNotifications,
       color: Theme.of(context).primaryColor,
-      child: ListView.separated(
+      child: CustomScrollView(
         controller: _scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
-        itemCount: _notifications.length,
-        separatorBuilder: (context, index) => const Divider(height: 1),
-        itemBuilder: (context, index) {
-          return _buildNotificationItem(_notifications[index]);
-        },
+        slivers: [
+          // Section "Aujourd'hui"
+          if (_todayNotifications.isNotEmpty)
+            SliverSectionHeader(title: 'Aujourd\'hui'),
+          
+          SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                return _buildNotificationItem(_todayNotifications[index]);
+              },
+              childCount: _todayNotifications.length,
+            ),
+          ),
+
+          // Section "Plus tôt"
+          if (_earlierNotifications.isNotEmpty)
+            SliverSectionHeader(title: 'Plus tôt'),
+          
+          SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                if (!_showAllEarlier && index >= _earlierLimit) return null;
+                return _buildNotificationItem(_earlierNotifications[index]);
+              },
+              childCount: _earlierNotifications.length,
+            ),
+          ),
+
+          // Bouton "Afficher plus"
+          if (_earlierNotifications.length > _earlierLimit && !_showAllEarlier)
+            SliverToBoxAdapter(
+              child: Center(
+                child: TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _showAllEarlier = true;
+                    });
+                  },
+                  child: Text(
+                    'Afficher plus (${_earlierNotifications.length - _earlierLimit})',
+                    style: TextStyle(
+                      color: Theme.of(context).primaryColor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+          const SliverToBoxAdapter(child: SizedBox(height: 16)),
+        ],
       ),
     );
   }
 
   Widget _buildNotificationItem(Map<String, dynamic> notification) {
-    final readStatus = notification['read'];
+    final isRead = notification['read'] == true;
     final data = notification['data'] ?? {};
     final car = data['car'] ?? {};
     final user = data['user'] ?? {};
@@ -217,63 +311,62 @@ class _NotificationsUserPageState extends State<NotificationsUserPage> {
         : DateTime.now();
 
     final userImage = user['image'] != null
-        ? "http://127.0.0.1:9098${user['image']}"
+        ? "https://dumum-tergo-backend.onrender.com${user['image']}"
         : null;
 
     return InkWell(
       onTap: () async {
-        try {
-          String? token = await storage.read(key: 'token');
-          if (token == null) throw Exception('Token non trouvé');
-
-          // Marquer la notification comme lue si elle ne l'est pas déjà
-          if (readStatus == false) {
-            final response = await http.put(
-              Uri.parse('http://127.0.0.1:9098/api/notifications/user/${notification['_id']}/read'),
-              headers: {
-                'Authorization': 'Bearer $token',
-                'Content-Type': 'application/json',
-              },
-            );
-
-            if (response.statusCode == 200) {
-              setState(() {
-                notification['read'] = true;
-              });
-            }
-          }
-
-          // Naviguer vers la page des réservations dans tous les cas
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ReservationPage(authToken: token),
-            ),
-          );
-        } catch (e) {
-          print('Erreur lors du marquage de la notification comme lue: $e');
-        }
+        await _markAsRead(notification['_id']);
+        // Naviguer vers la page appropriée
+        _handleNotificationTap(notification);
       },
-
       child: Container(
-        color: readStatus == false ? AppColors.primary.withOpacity(0.05) : Colors.transparent,
+        decoration: BoxDecoration(
+          color: isRead 
+              ? Colors.transparent 
+              : Theme.of(context).primaryColor.withOpacity(0.05),
+          border: Border(
+            bottom: BorderSide(
+              color: Theme.of(context).dividerColor.withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+        ),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CircleAvatar(
-              radius: 24,
-              backgroundColor: _getNotificationColor(notification['type']).withOpacity(0.2),
-              backgroundImage: userImage != null ? NetworkImage(userImage) : null,
-              child: userImage == null
-                  ? Icon(
-                      _getNotificationIcon(notification['type']),
-                      color: _getNotificationColor(notification['type']),
-                      size: 24,
-                    )
-                  : null,
+            // Badge de statut de lecture
+            Container(
+              width: 8,
+              height: 8,
+              margin: const EdgeInsets.only(top: 8, right: 8),
+              decoration: BoxDecoration(
+                color: isRead ? Colors.transparent : Theme.of(context).primaryColor,
+                shape: BoxShape.circle,
+              ),
             ),
-            const SizedBox(width: 16),
+            
+            // Avatar/Icone
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: _getNotificationColor(notification['type']).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Center(
+                child: Icon(
+                  _getNotificationIcon(notification['type']),
+                  color: _getNotificationColor(notification['type']),
+                  size: 20,
+                ),
+              ),
+            ),
+            
+            const SizedBox(width: 12),
+            
+            // Contenu
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -283,72 +376,72 @@ class _NotificationsUserPageState extends State<NotificationsUserPage> {
                       Expanded(
                         child: Text(
                           _getNotificationTitle(notification['type']),
-                          style: TextStyle(
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             fontWeight: FontWeight.w600,
-                            color: readStatus ? Colors.black : Colors.grey[700],
-                            fontSize: 15,
+                            color: isRead 
+                                ? Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.8)
+                                : Theme.of(context).textTheme.bodyMedium?.color,
                           ),
                         ),
                       ),
-                      if (readStatus == false)
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: AppColors.primary,
-                            shape: BoxShape.circle,
-                          ),
+                      Text(
+                        DateFormat('HH:mm').format(createdAt),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).hintColor,
                         ),
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 4),
+                  
                   if (user['name'] != null)
-                    Text(
-                      'De: ${user['name']}',
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 14,
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        'De: ${user['name']}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).hintColor,
+                        ),
                       ),
                     ),
+                  
                   if (car['brand'] != null && car['model'] != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
                         '${car['brand']} ${car['model']}',
-                        style: const TextStyle(
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w500,
-                          fontSize: 14,
                         ),
                       ),
                     ),
+                  
                   if (data['startDate'] != null && data['endDate'] != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Row(
                         children: [
-                          const Icon(Icons.calendar_today, size: 14, color: Colors.grey),
+                          Icon(
+                            Icons.calendar_today,
+                            size: 14,
+                            color: Theme.of(context).hintColor,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             '${_formatDate(data['startDate'])} - ${_formatDate(data['endDate'])}',
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 13,
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).hintColor,
                             ),
                           ),
                         ],
                       ),
                     ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Text(
-                        timeago.format(createdAt, locale: 'fr'),
-                        style: TextStyle(
-                          color: Colors.grey[500],
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
+                  
+                  const SizedBox(height: 4),
+                  Text(
+                    timeago.format(createdAt, locale: 'fr'),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).hintColor,
+                    ),
                   ),
                 ],
               ),
@@ -358,6 +451,58 @@ class _NotificationsUserPageState extends State<NotificationsUserPage> {
       ),
     );
   }
+
+Future<void> _handleNotificationTap(Map<String, dynamic> notification) async {
+  final data = notification['data'] ?? {};
+  final type = notification['type']?.toString() ?? '';
+
+  if (data.isEmpty || type.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Notification invalide')),
+    );
+    return;
+  }
+
+  setState(() {
+    _isOpeningDetails = true;
+  });
+
+  try {
+    switch (type) {
+      case 'reservation_accepted':
+      case 'reservation_rejected':
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ReservationDetailsPage(reservationData: data),
+          ),
+        );
+        break;
+        
+      default:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Type de notification non pris en charge: $type')),
+        );
+    }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Erreur lors du traitement: ${e.toString()}')),
+    );
+  } finally {
+    if (mounted) {
+      setState(() {
+        _isOpeningDetails = false;
+      });
+    }
+  }
+}
+
+// Exemple de méthode pour gérer un autre type de notification
+
+
+
+
+
 
   Color _getNotificationColor(String? type) {
     switch (type) {
@@ -370,7 +515,7 @@ class _NotificationsUserPageState extends State<NotificationsUserPage> {
       case 'payment_received':
         return Colors.purple;
       default:
-        return Colors.orange;
+        return Theme.of(context).primaryColor;
     }
   }
 
@@ -407,115 +552,31 @@ class _NotificationsUserPageState extends State<NotificationsUserPage> {
   String _formatDate(String dateString) {
     try {
       final date = DateTime.parse(dateString);
-      return '${date.day}/${date.month}/${date.year}';
+      return DateFormat('dd/MM/yyyy').format(date);
     } catch (e) {
       return dateString;
     }
   }
 }
 
-class HomeView extends StatefulWidget {
-  const HomeView({Key? key}) : super(key: key);
+class SliverSectionHeader extends StatelessWidget {
+  final String title;
 
-  @override
-  _HomeViewState createState() => _HomeViewState();
-}
-
-class _HomeViewState extends State<HomeView> {
-  int _currentIndex = 0;
-  int _unreadNotifications = 0; // Nombre de notifications non lues
-
-  final List<Widget> _screens = [
-    const Placeholder(),
-    const Placeholder(),
-    const Placeholder(),
-    const Placeholder(),
-    const Placeholder(),
-  ];
-
-  final List<String> _appBarTitles = [
-    'Accueil',
-    'Rechercher une voiture',
-    'Marketplace',
-    'Événement',
-    'Profil',
-  ];
+  const SliverSectionHeader({Key? key, required this.title}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_appBarTitles[_currentIndex]),
-        actions: [
-          Stack(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.notifications),
-                onPressed: () async {
-                  // Naviguer vers la page des notifications
-                  await Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => NotificationsUserPage(
-                        onNotificationsRead: () {
-                          setState(() {
-                            _unreadNotifications = 0;
-                          });
-                        },
-                        onUnreadCountChanged: (count) {
-                          // Mettre à jour le badge dynamiquement
-                          setState(() {
-                            _unreadNotifications = count;
-                          });
-                        },
-                      ),
-                    ),
-                  );
-                },
-              ),
-              if (_unreadNotifications > 0)
-                Positioned(
-                  right: 8,
-                  top: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    constraints: const BoxConstraints(
-                      minWidth: 16,
-                      minHeight: 16,
-                    ),
-                    child: Text(
-                      '$_unreadNotifications',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-            ],
+    return SliverToBoxAdapter(
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+        color: Theme.of(context).scaffoldBackgroundColor,
+        child: Text(
+          title,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: Theme.of(context).primaryColor,
           ),
-        ],
-      ),
-      body: _screens[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Accueil'),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Rechercher'),
-          BottomNavigationBarItem(icon: Icon(Icons.store), label: 'Marketplace'),
-          BottomNavigationBarItem(icon: Icon(Icons.event), label: 'Événement'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
-        ],
+        ),
       ),
     );
   }

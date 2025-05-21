@@ -70,7 +70,7 @@ class ForgotPasswordViewModel extends ChangeNotifier {
 
   Future<http.Response> _sendOtpRequest(String fullPhoneNumber) async {
     return await http.post(
-      Uri.parse('http://127.0.0.1:9098/api/forgot-passwordP'),
+      Uri.parse('https://dumum-tergo-backend.onrender.com/api/forgot-passwordP'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'mobile': fullPhoneNumber}),
     );

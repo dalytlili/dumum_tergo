@@ -18,12 +18,12 @@ class EditProfileSellerView extends StatefulWidget {
 }
 
 class _EditProfileSellerViewState extends State<EditProfileSellerView> {
-    final LogoutService _logoutService = LogoutService();
+  final LogoutService _logoutService = LogoutService();
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
+
   @override
   void initState() {
     super.initState();
-    // Appeler fetchProfileData pour récupérer les données de l'utilisateur
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<EditProfileSellerViewModel>(context, listen: false).fetchProfileData();
     });
@@ -31,98 +31,146 @@ class _EditProfileSellerViewState extends State<EditProfileSellerView> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
     final viewModel = Provider.of<EditProfileSellerViewModel>(context, listen: true);
 
     return Scaffold(
-            appBar: AppBar(
-        title: const Text('Modifier le profil', 
+      appBar: AppBar(
+        title: Text(
+          'Modifier le profil',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 18,
+            color: isDarkMode ? Colors.white : Colors.black,
           ),
         ),
         centerTitle: true,
         elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        backgroundColor: isDarkMode ? Colors.grey[900] : Colors.white,
+        iconTheme: IconThemeData(
+          color: isDarkMode ? Colors.white : Colors.black,
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout,),
+            icon: Icon(Icons.logout, color: isDarkMode ? Colors.white : Colors.black),
             onPressed: () {
               _showLogoutConfirmationDialog(context);
             },
           ),
         ],
-      
       ),
+      backgroundColor: isDarkMode ? Colors.grey[900] : Colors.white,
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(
-          horizontal: MediaQuery.of(context).size.width * 0.05, // 10% de la largeur de l'écran
-          vertical: 30.0, // Garder le padding vertical fixe
+          horizontal: MediaQuery.of(context).size.width * 0.05,
+          vertical: 30.0,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildProfileImage(viewModel),
+            _buildProfileImage(viewModel, isDarkMode),
             const SizedBox(height: 10),
-            // Afficher le temps restant avant l'expiration
-           RichText(
-  text: TextSpan(
-    style: TextStyle(
-      fontSize: 16,
-      fontWeight: FontWeight.bold,
-      color: Colors.grey[700], // Couleur par défaut
-    ),
-    children: [
-      const TextSpan(text: 'Temps restant avant expiration : '),
-      TextSpan(
-        text: viewModel.remainingSubscriptionTime,
-        style: TextStyle(
-          color: Colors.red, // Couleur personnalisée pour le temps restant
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    ],
-  ),
-),
+            RichText(
+              text: TextSpan(
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
+                ),
+                children: [
+                  const TextSpan(text: 'Temps restant avant expiration : '),
+                  TextSpan(
+                    text: viewModel.remainingSubscriptionTime,
+                    style: TextStyle(
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(height: 16),
             TextField(
               controller: viewModel.nameController,
-              decoration: const InputDecoration(
+              style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
+              decoration: InputDecoration(
                 labelText: 'Nom',
+                labelStyle: TextStyle(color: isDarkMode ? Colors.grey[400] : Colors.grey[700]),
                 border: OutlineInputBorder(),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: AppColors.primary, width: 1.5),
+                ),
+                fillColor: isDarkMode ? Colors.grey[800]! : Colors.grey[50]!,
+                filled: true,
               ),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: viewModel.adressController,
-              decoration: const InputDecoration(
+              style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
+              decoration: InputDecoration(
                 labelText: 'Adresse',
+                labelStyle: TextStyle(color: isDarkMode ? Colors.grey[400] : Colors.grey[700]),
                 border: OutlineInputBorder(),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: AppColors.primary, width: 1.5),
+                ),
+                fillColor: isDarkMode ? Colors.grey[800]! : Colors.grey[50]!,
+                filled: true,
               ),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: viewModel.emailController,
-              decoration: const InputDecoration(
+              style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
+              decoration: InputDecoration(
                 labelText: 'Email',
+                labelStyle: TextStyle(color: isDarkMode ? Colors.grey[400] : Colors.grey[700]),
                 border: OutlineInputBorder(),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: AppColors.primary, width: 1.5),
+                ),
+                fillColor: isDarkMode ? Colors.grey[800]! : Colors.grey[50]!,
+                filled: true,
               ),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: viewModel.descriptionController,
-              decoration: const InputDecoration(
+              style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
+              decoration: InputDecoration(
                 labelText: 'Description',
+                labelStyle: TextStyle(color: isDarkMode ? Colors.grey[400] : Colors.grey[700]),
                 border: OutlineInputBorder(),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: AppColors.primary, width: 1.5),
+                ),
+                fillColor: isDarkMode ? Colors.grey[800]! : Colors.grey[50]!,
+                filled: true,
               ),
             ),
             const SizedBox(height: 16),
             TextFormField(
               controller: viewModel.phoneNumberController,
+              style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
               keyboardType: TextInputType.phone,
               decoration: InputDecoration(
                 hintText: 'Numéro de téléphone',
+                hintStyle: TextStyle(color: isDarkMode ? Colors.grey[400] : Colors.grey[500]),
+                labelStyle: TextStyle(color: isDarkMode ? Colors.grey[400] : Colors.grey[700]),
                 prefixIcon: InkWell(
                   onTap: () {
                     showCountryPicker(
@@ -133,6 +181,10 @@ class _EditProfileSellerViewState extends State<EditProfileSellerView> {
                           viewModel.selectedCountry = country;
                         });
                       },
+                      countryListTheme: CountryListThemeData(
+                        backgroundColor: isDarkMode ? Colors.grey[900]! : Colors.white,
+                        textStyle: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
+                      ),
                     );
                   },
                   child: Padding(
@@ -148,18 +200,14 @@ class _EditProfileSellerViewState extends State<EditProfileSellerView> {
                         Text(
                           '+${viewModel.selectedCountry.phoneCode}',
                           style: TextStyle(
-                            color: Theme.of(context).brightness == Brightness.dark
-                                ? Colors.white70
-                                : Colors.grey[700],
+                            color: isDarkMode ? Colors.white70 : Colors.grey[700],
                             fontSize: 14,
                           ),
                         ),
                         const SizedBox(width: 8),
                         Icon(
                           Icons.arrow_drop_down,
-                          color: Theme.of(context).brightness == Brightness.dark
-                              ? Colors.white70
-                              : Colors.grey[700],
+                          color: isDarkMode ? Colors.white70 : Colors.grey[700],
                         ),
                       ],
                     ),
@@ -168,10 +216,16 @@ class _EditProfileSellerViewState extends State<EditProfileSellerView> {
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!),
+                ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: BorderSide(color: AppColors.primary, width: 1.5),
                 ),
+                fillColor: isDarkMode ? Colors.grey[800]! : Colors.grey[50]!,
+                filled: true,
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
@@ -185,10 +239,10 @@ class _EditProfileSellerViewState extends State<EditProfileSellerView> {
             ),
             const SizedBox(height: 24),
             SizedBox(
-              width: double.infinity, // Prend toute la largeur disponible
+              width: double.infinity,
               child: ElevatedButton(
                 onPressed: viewModel.isLoading
-                    ? null // Désactive le bouton pendant le chargement
+                    ? null
                     : () async {
                         await viewModel.updateProfile(context);
                       },
@@ -198,10 +252,11 @@ class _EditProfileSellerViewState extends State<EditProfileSellerView> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
+                  disabledBackgroundColor: AppColors.primary.withOpacity(0.5),
                 ),
                 child: viewModel.isLoading
-                    ? const CircularProgressIndicator() // Affiche un indicateur de chargement
-                    : const Text('Enregistrer'),
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text('Enregistrer', style: TextStyle(color: Colors.white)),
               ),
             ),
           ],
@@ -210,55 +265,78 @@ class _EditProfileSellerViewState extends State<EditProfileSellerView> {
     );
   }
 
-  // Widget pour afficher et modifier l'image de profil
-  Widget _buildProfileImage(EditProfileSellerViewModel viewModel) {
+  Widget _buildProfileImage(EditProfileSellerViewModel viewModel, bool isDarkMode) {
     return Stack(
       alignment: Alignment.bottomRight,
       children: [
         CircleAvatar(
           radius: 50,
+          backgroundColor: isDarkMode ? Colors.grey[800] : Colors.grey[200],
           backgroundImage: _getImage(viewModel.imageUrlController.text),
         ),
-        IconButton(
-          icon: const Icon(Icons.edit, color: Colors.white),
-          onPressed: () async {
-            final picker = ImagePicker();
-            final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-            if (pickedFile != null) {
-              viewModel.imageUrlController.text = pickedFile.path;
-              viewModel.notifyListeners();
-            }
-          },
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.primary,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: isDarkMode ? Colors.grey[900]! : Colors.white,
+              width: 2,
+            ),
+          ),
+          child: IconButton(
+            icon: const Icon(Icons.edit, color: Colors.white, size: 20),
+            onPressed: () async {
+              final picker = ImagePicker();
+              final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+              if (pickedFile != null) {
+                viewModel.imageUrlController.text = pickedFile.path;
+                viewModel.notifyListeners();
+              }
+            },
+          ),
         ),
       ],
     );
   }
- void _showLogoutConfirmationDialog(BuildContext context) {
+
+  void _showLogoutConfirmationDialog(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Déconnexion'),
-          content: const Text('Êtes-vous sûr de vouloir vous déconnecter ?'),
+          backgroundColor: isDarkMode ? Colors.grey[800] : Colors.white,
+          title: Text(
+            'Déconnexion',
+            style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
+          ),
+          content: Text(
+            'Êtes-vous sûr de vouloir vous déconnecter ?',
+            style: TextStyle(color: isDarkMode ? Colors.white70 : Colors.black87),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Annuler'),
+              child: Text(
+                'Annuler',
+                style: TextStyle(color: isDarkMode ? Colors.white70 : Colors.black87),
+              ),
             ),
             TextButton(
-                   onPressed: () async {
-      final token = await storage.read(key: 'seller_token');
+              onPressed: () async {
+                final token = await _storage.read(key: 'seller_token');
                 if (token != null) {
-      await _logoutService.logoutSeller(token);
-           Navigator.of(context).pushNamedAndRemoveUntil('/welcome', (route) => false);
-
+                  await _logoutService.logoutSeller(token);
+                  Navigator.of(context).pushNamedAndRemoveUntil('/welcome', (route) => false);
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Token not found')),
                   );
                 }
               },
-              child: const Text('Déconnexion', 
+              child: const Text(
+                'Déconnexion', 
                 style: TextStyle(color: Colors.red),
               ),
             ),
@@ -267,22 +345,21 @@ class _EditProfileSellerViewState extends State<EditProfileSellerView> {
       },
     );
   }
-  // Méthode pour obtenir l'image (depuis une URL ou un fichier local)
+
   ImageProvider _getImage(String imageUrl) {
     if (imageUrl.isNotEmpty) {
       if (imageUrl.startsWith('http')) {
-        return NetworkImage(imageUrl); // Si c'est une URL
+        return NetworkImage(imageUrl);
       } else {
-        // Vérification si c'est un fichier local
         final file = File(imageUrl);
         if (file.existsSync()) {
-          return FileImage(file); // Si c'est un fichier local valide
+          return FileImage(file);
         } else {
-          return const AssetImage('assets/images/default.png'); // Image par défaut si le fichier n'existe pas
+          return const AssetImage('assets/images/default.png');
         }
       }
     } else {
-      return const AssetImage('assets/images/default.png'); // Image par défaut si l'URL est vide
+      return const AssetImage('assets/images/default.png');
     }
   }
 }

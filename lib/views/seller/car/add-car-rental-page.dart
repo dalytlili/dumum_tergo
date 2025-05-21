@@ -8,8 +8,11 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
-import 'package:http_parser/http_parser.dart'; // Pour MediaType
-import 'package:mime/mime.dart'; // Ajoutez cette importation
+import 'package:http_parser/http_parser.dart';
+import 'package:mime/mime.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+final storage = FlutterSecureStorage();
 
 class AddCarRentalPage extends StatefulWidget {
   @override
@@ -27,10 +30,10 @@ class _AddCarRentalPageState extends State<AddCarRentalPage> {
   final TextEditingController _locationController = TextEditingController();
   final TextEditingController _depositController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
-                     bool _isExpanded = false; // État pour afficher/masquer les caractéristiques
-bool isLoadingMakes = false;
-bool isLoadingModels = false;
-
+  bool _isExpanded = false;
+  bool isLoadingMakes = false;
+  bool isLoadingModels = false;
+bool isSubmitting = false;
   List<String> years = [];
   List<Map<String, dynamic>> makes = [];
   List<Map<String, dynamic>> models = [];
@@ -55,8 +58,8 @@ bool isLoadingModels = false;
     'ESP'
   ];
 
-  int _currentStep = 0; // Pour suivre l'étape actuelle
-  final _formKey = GlobalKey<FormState>(); // Pour la validation du formulaire
+  int _currentStep = 0;
+  final _formKey = GlobalKey<FormState>();
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -77,51 +80,50 @@ bool isLoadingModels = false;
       });
     }
   }
-Future<void> _fetchMakes(String year) async {
-  setState(() {
-    isLoadingMakes = true;
-    makes = [];
-    selectedMakeId = null;
-    models = [];
-    selectedModel = null;
-  });
 
-  final response = await http.get(Uri.parse('https://www.carqueryapi.com/api/0.3/?cmd=getMakes&year=$year'));
-
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body.replaceAll('?(', '').replaceAll(');', ''));
+  Future<void> _fetchMakes(String year) async {
     setState(() {
-      makes = List<Map<String, dynamic>>.from(data['Makes']);
+      isLoadingMakes = true;
+      makes = [];
+      selectedMakeId = null;
+      models = [];
+      selectedModel = null;
+    });
+
+    final response = await http.get(Uri.parse('https://www.carqueryapi.com/api/0.3/?cmd=getMakes&year=$year'));
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body.replaceAll('?(', '').replaceAll(');', ''));
+      setState(() {
+        makes = List<Map<String, dynamic>>.from(data['Makes']);
+      });
+    }
+
+    setState(() {
+      isLoadingMakes = false;
     });
   }
 
-  setState(() {
-    isLoadingMakes = false;
-  });
-}
-
-
-Future<void> _fetchModels(String makeId, String year) async {
-  setState(() {
-    isLoadingModels = true;
-    models = [];
-    selectedModel = null;
-  });
-
-  final response = await http.get(Uri.parse('https://www.carqueryapi.com/api/0.3/?cmd=getModels&make=$makeId&year=$year'));
-
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body.replaceAll('?(', '').replaceAll(');', ''));
+  Future<void> _fetchModels(String makeId, String year) async {
     setState(() {
-      models = List<Map<String, dynamic>>.from(data['Models']);
+      isLoadingModels = true;
+      models = [];
+      selectedModel = null;
+    });
+
+    final response = await http.get(Uri.parse('https://www.carqueryapi.com/api/0.3/?cmd=getModels&make=$makeId&year=$year'));
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body.replaceAll('?(', '').replaceAll(');', ''));
+      setState(() {
+        models = List<Map<String, dynamic>>.from(data['Models']);
+      });
+    }
+
+    setState(() {
+      isLoadingModels = false;
     });
   }
-
-  setState(() {
-    isLoadingModels = false;
-  });
-}
-
 
   String _formatMatricule(String input) {
     input = input.replaceAll(RegExp(r'[^0-9]'), '');
@@ -162,111 +164,112 @@ Future<void> _fetchModels(String makeId, String year) async {
       });
     }
   }
-Future<void> _submitForm() async {
-  // Vérification des champs obligatoires
-  if (_vehicleImages.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Veuillez ajouter au moins une image')),
-    );
-    return;
-  }
 
-  const url = 'http://127.0.0.1:9098/api/cars';
-  final token = await storage.read(key: 'seller_token');
-
-  try {
-    var request = http.MultipartRequest('POST', Uri.parse(url));
-    request.headers.addAll({
-      'Authorization': 'Bearer $token',
-      'Accept': 'application/json',
+  Future<void> _submitForm() async {
+    if (_vehicleImages.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Veuillez ajouter au moins une image')),
+      );
+      return;
+    }
+   setState(() {
+      isSubmitting = true; // Activer l'indicateur de chargement
     });
+    const url = 'https://dumum-tergo-backend.onrender.com/api/cars';
+    final token = await storage.read(key: 'seller_token');
 
-    // Ajout des champs textuels
-    request.fields.addAll({
-      'brand': _brandController.text,
-      'model': _modelController.text,
-      'year': _yearController.text,
-      'registrationNumber': _registrationNumberController.text,
-      'color': _colorController.text,
-      'seats': _seatsController.text,
-      'pricePerDay': _pricePerDayController.text,
-      'transmission': selectedTransmission ?? 'manuelle',
-      'mileagePolicy': selectedMileagePolicy ?? 'illimitée',
-      'location': _locationController.text,
-      'deposit': _depositController.text,
-      'description': _descriptionController.text,
-      'features': jsonEncode(selectedFeatures),
-    });
+    try {
+      var request = http.MultipartRequest('POST', Uri.parse(url));
+      request.headers.addAll({
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+      });
 
-    // Ajout des images avec vérification et gestion d'erreur
-    for (var i = 0; i < _vehicleImages.length; i++) {
-      final image = _vehicleImages[i];
-      final file = File(image.path);
-      
-      try {
-        if (!await file.exists()) {
-          debugPrint('Fichier introuvable: ${file.path}');
-          continue;
+      request.fields.addAll({
+        'brand': _brandController.text,
+        'model': _modelController.text,
+        'year': _yearController.text,
+        'registrationNumber': _registrationNumberController.text,
+        'color': _colorController.text,
+        'seats': _seatsController.text,
+        'pricePerDay': _pricePerDayController.text,
+        'transmission': selectedTransmission ?? 'manuelle',
+        'mileagePolicy': selectedMileagePolicy ?? 'illimitée',
+        'location': _locationController.text,
+        'deposit': _depositController.text,
+        'description': _descriptionController.text,
+        'features': jsonEncode(selectedFeatures),
+      });
+
+      for (var i = 0; i < _vehicleImages.length; i++) {
+        final image = _vehicleImages[i];
+        final file = File(image.path);
+        
+        try {
+          if (!await file.exists()) {
+            debugPrint('Fichier introuvable: ${file.path}');
+            continue;
+          }
+
+          final fileSize = await file.length();
+          if (fileSize > 10 * 1024 * 1024) {
+            debugPrint('Fichier trop volumineux: ${file.path}');
+            continue;
+          }
+
+          final mimeType = lookupMimeType(file.path) ?? 'image/jpeg';
+          final contentType = mimeType.split('/');
+
+          final multipartFile = await http.MultipartFile.fromPath(
+            'images',
+            file.path,
+            filename: 'car_${DateTime.now().millisecondsSinceEpoch}_$i.${file.path.split('.').last}',
+            contentType: MediaType(contentType[0], contentType[1]),
+          );
+
+          request.files.add(multipartFile);
+          debugPrint('Image ajoutée: ${file.path}');
+        } catch (e) {
+          debugPrint('Erreur lors du traitement de l\'image ${file.path}: $e');
         }
+      }
 
-        // Vérification de la taille du fichier (max 10MB)
-        final fileSize = await file.length();
-        if (fileSize > 10 * 1024 * 1024) {
-          debugPrint('Fichier trop volumineux: ${file.path}');
-          continue;
-        }
+      if (request.files.isEmpty) {
+        throw Exception('Aucune image valide à envoyer');
+      }
 
-        // Détermination du type MIME
-        final mimeType = lookupMimeType(file.path) ?? 'image/jpeg';
-        final contentType = mimeType.split('/');
+      final response = await request.send().timeout(const Duration(seconds: 30));
+      final responseBody = await response.stream.bytesToString();
+      debugPrint('Status code: ${response.statusCode}');
+      debugPrint('Réponse complète: $responseBody');
 
-        final multipartFile = await http.MultipartFile.fromPath(
-          'images', // Doit correspondre exactement au nom attendu par Multer
-          file.path,
-          filename: 'car_${DateTime.now().millisecondsSinceEpoch}_$i.${file.path.split('.').last}',
-          contentType: MediaType(contentType[0], contentType[1]),
+      if (response.statusCode == 201) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Voiture créée avec succès!')),
         );
-
-        request.files.add(multipartFile);
-        debugPrint('Image ajoutée: ${file.path}');
-      } catch (e) {
-        debugPrint('Erreur lors du traitement de l\'image ${file.path}: $e');
+        Navigator.of(context).pop(true);
+      } else {
+        final error = jsonDecode(responseBody);
+        throw Exception(error['message'] ?? 'Erreur inconnue du serveur');
+      }
+    } on TimeoutException {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Le serveur ne répond pas')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur: ${e.toString()}')),
+      );
+      debugPrint('Erreur complète: $e');
+    }finally {
+      if (mounted) {
+        setState(() {
+          isSubmitting = false; // Désactiver l'indicateur de chargement
+        });
       }
     }
-
-    // Vérification qu'au moins une image a été ajoutée
-    if (request.files.isEmpty) {
-      throw Exception('Aucune image valide à envoyer');
-    }
-
-    // Envoi avec timeout
-    final response = await request.send().timeout(const Duration(seconds: 30));
-
-    // Traitement de la réponse
-    final responseBody = await response.stream.bytesToString();
-    debugPrint('Status code: ${response.statusCode}');
-    debugPrint('Réponse complète: $responseBody');
-
-    if (response.statusCode == 201) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Voiture créée avec succès!')),
-      );
-      Navigator.of(context).pop(true);
-    } else {
-      final error = jsonDecode(responseBody);
-      throw Exception(error['message'] ?? 'Erreur inconnue du serveur');
-    }
-  } on TimeoutException {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Le serveur ne répond pas')),
-    );
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Erreur: ${e.toString()}')),
-    );
-    debugPrint('Erreur complète: $e');
   }
-}
+
   void _resetForm() {
     _brandController.clear();
     _modelController.clear();
@@ -288,6 +291,9 @@ Future<void> _submitForm() async {
   }
 
   Widget _buildStepIndicator() {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       child: Row(
@@ -299,7 +305,7 @@ Future<void> _submitForm() async {
                   width: double.infinity,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: _currentStep >= 0 ? AppColors.primary : Colors.grey[300],
+                    color: _currentStep >= 0 ? AppColors.primary : (isDarkMode ? Colors.grey[700] : Colors.grey[300]),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -307,7 +313,7 @@ Future<void> _submitForm() async {
                 Text(
                   'Détails',
                   style: TextStyle(
-                    color: _currentStep >= 0 ? AppColors.primary : Colors.grey,
+                    color: _currentStep >= 0 ? AppColors.primary : (isDarkMode ? Colors.grey[400] : Colors.grey),
                     fontWeight: _currentStep == 0 ? FontWeight.bold : FontWeight.normal,
                   ),
                 ),
@@ -322,7 +328,7 @@ Future<void> _submitForm() async {
                   width: double.infinity,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: _currentStep >= 1 ? AppColors.primary : Colors.grey[300],
+                    color: _currentStep >= 1 ? AppColors.primary : (isDarkMode ? Colors.grey[700] : Colors.grey[300]),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -330,7 +336,7 @@ Future<void> _submitForm() async {
                 Text(
                   'Tarification',
                   style: TextStyle(
-                    color: _currentStep >= 1 ? AppColors.primary : Colors.grey,
+                    color: _currentStep >= 1 ? AppColors.primary : (isDarkMode ? Colors.grey[400] : Colors.grey),
                     fontWeight: _currentStep == 1 ? FontWeight.bold : FontWeight.normal,
                   ),
                 ),
@@ -371,26 +377,30 @@ Future<void> _submitForm() async {
   }
 
   InputDecoration _buildInputDecoration(String label, {String? hintText, Widget? suffixIcon}) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    
     return InputDecoration(
       labelText: label,
       hintText: hintText,
+      hintStyle: TextStyle(color: isDarkMode ? Colors.grey[400] : Colors.grey),
       suffixIcon: suffixIcon,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey[300]!),
+        borderSide: BorderSide(color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey[300]!),
+        borderSide: BorderSide(color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(color: AppColors.primary, width: 2),
       ),
       filled: true,
-      fillColor: Colors.grey[50],
+      fillColor: isDarkMode ? Colors.grey[800]! : Colors.grey[50]!,
       contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      labelStyle: TextStyle(color: Colors.grey[600]),
+      labelStyle: TextStyle(color: isDarkMode ? Colors.grey[400] : Colors.grey[600]),
     );
   }
 
@@ -403,13 +413,16 @@ Future<void> _submitForm() async {
   }
 
   Widget _buildVehicleDetailsStep() {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDarkMode ? Colors.grey[850]! : Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(isDarkMode ? 0.1 : 0.05),
             blurRadius: 10,
             offset: Offset(0, 4),
           ),
@@ -422,6 +435,8 @@ Future<void> _submitForm() async {
           _buildSectionTitle('Détails du véhicule'),
           DropdownButtonFormField<String>(
             decoration: _buildInputDecoration('Année'),
+            dropdownColor: isDarkMode ? Colors.grey[800] : Colors.white,
+            style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
             value: selectedYear,
             items: years.map((year) {
               return DropdownMenuItem(
@@ -451,7 +466,7 @@ Future<void> _submitForm() async {
                   Text(
                     "Chargement des marques...",
                     style: TextStyle(
-                      color: Colors.grey[600],
+                      color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                       fontSize: 14,
                     ),
                   ),
@@ -460,6 +475,8 @@ Future<void> _submitForm() async {
             ),
           DropdownButtonFormField<String>(
             decoration: _buildInputDecoration('Marque'),
+            dropdownColor: isDarkMode ? Colors.grey[800] : Colors.white,
+            style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
             value: selectedMakeId,
             items: makes.map((make) {
               return DropdownMenuItem<String>(
@@ -493,7 +510,7 @@ Future<void> _submitForm() async {
                   Text(
                     "Chargement des modèles...",
                     style: TextStyle(
-                      color: Colors.grey[600],
+                      color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                       fontSize: 14,
                     ),
                   ),
@@ -502,6 +519,8 @@ Future<void> _submitForm() async {
             ),
           DropdownButtonFormField<String>(
             decoration: _buildInputDecoration('Modèle'),
+            dropdownColor: isDarkMode ? Colors.grey[800] : Colors.white,
+            style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
             value: selectedModel,
             items: models.map((model) {
               return DropdownMenuItem<String>(
@@ -520,6 +539,7 @@ Future<void> _submitForm() async {
           SizedBox(height: 20),
           TextFormField(
             controller: _registrationNumberController,
+            style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
             decoration: _buildInputDecoration(
               'Numéro d\'immatriculation*',
               hintText: 'Ex: 123Tu4567',
@@ -532,6 +552,7 @@ Future<void> _submitForm() async {
           SizedBox(height: 20),
           TextFormField(
             controller: _colorController,
+            style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
             decoration: _buildInputDecoration('Couleur*'),
             validator: (value) => value == null || value.isEmpty
                 ? 'Veuillez entrer une couleur'
@@ -540,6 +561,7 @@ Future<void> _submitForm() async {
           SizedBox(height: 20),
           TextFormField(
             controller: _seatsController,
+            style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
             keyboardType: TextInputType.number,
             decoration: _buildInputDecoration('Nombre de sièges*'),
             validator: (value) => value == null || value.isEmpty
@@ -549,6 +571,8 @@ Future<void> _submitForm() async {
           SizedBox(height: 20),
           DropdownButtonFormField<String>(
             decoration: _buildInputDecoration('Transmission*'),
+            dropdownColor: isDarkMode ? Colors.grey[800] : Colors.white,
+            style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
             value: selectedTransmission,
             items: [
               DropdownMenuItem(value: 'automatique', child: Text('Automatique')),
@@ -564,6 +588,8 @@ Future<void> _submitForm() async {
           SizedBox(height: 20),
           DropdownButtonFormField<String>(
             decoration: _buildInputDecoration('Politique de Kilométrage*'),
+            dropdownColor: isDarkMode ? Colors.grey[800] : Colors.white,
+            style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
             value: selectedMileagePolicy,
             items: [
               DropdownMenuItem(value: 'limitée', child: Text('Limitée')),
@@ -596,18 +622,18 @@ Future<void> _submitForm() async {
                 },
                 selectedColor: AppColors.primary.withOpacity(0.2),
                 checkmarkColor: AppColors.primary,
-                backgroundColor: Colors.grey[100],
+                backgroundColor: isDarkMode ? Colors.grey[700]! : Colors.grey[100]!,
                 labelStyle: TextStyle(
                   color: selectedFeatures.contains(feature) 
                       ? AppColors.primary 
-                      : Colors.grey[800],
+                      : (isDarkMode ? Colors.white : Colors.grey[800]),
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                   side: BorderSide(
                     color: selectedFeatures.contains(feature) 
                         ? AppColors.primary 
-                        : Colors.grey[300]!,
+                        : (isDarkMode ? Colors.grey[600]! : Colors.grey[300]!),
                   ),
                 ),
               );
@@ -659,7 +685,7 @@ Future<void> _submitForm() async {
               child: Text(
                 '${_vehicleImages.length} photo(s) sélectionnée(s)',
                 style: TextStyle(
-                  color: Colors.grey[600],
+                  color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                   fontSize: 14,
                 ),
                 textAlign: TextAlign.center,
@@ -667,16 +693,21 @@ Future<void> _submitForm() async {
             ),
           SizedBox(height: 20),
           _vehicleImages.isEmpty
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    child: Text(
-                      'Aucune photo sélectionnée',
-                      style: TextStyle(fontSize: 16, color: Colors.grey),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                )
+              ?Center(
+  child: Padding(
+    padding: const EdgeInsets.symmetric(vertical: 10),
+    child: Text(
+      'Aucune photo sélectionnée',
+      style: TextStyle(
+        fontSize: 16,
+        color: isDarkMode ? Colors.grey[400] : Colors.grey,
+      ),
+      textAlign: TextAlign.center,
+    ),
+  ),
+)
+
+      
               : GridView.builder(
                   shrinkWrap: true,
                   physics: NeverScrollableScrollPhysics(),
@@ -714,7 +745,7 @@ Future<void> _submitForm() async {
                           right: 4,
                           child: Container(
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: isDarkMode ? Colors.grey[800]! : Colors.white,
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
@@ -739,20 +770,23 @@ Future<void> _submitForm() async {
                       ],
                     );
                   },
-                ),
-        ],
-      ),
-    );
+    ),
+        ],)
+      );
+  
   }
 
   Widget _buildTarificationLocationStep() {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDarkMode ? Colors.grey[850]! : Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(isDarkMode ? 0.1 : 0.05),
             blurRadius: 10,
             offset: Offset(0, 4),
           ),
@@ -765,6 +799,7 @@ Future<void> _submitForm() async {
           _buildSectionTitle('Tarification et localisation'),
           TextFormField(
             controller: _pricePerDayController,
+            style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
             keyboardType: TextInputType.numberWithOptions(decimal: true),
             decoration: _buildInputDecoration(
               'Prix par jour (TND)*',
@@ -779,6 +814,7 @@ Future<void> _submitForm() async {
           SizedBox(height: 20),
           TextFormField(
             controller: _depositController,
+            style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
             keyboardType: TextInputType.numberWithOptions(decimal: true),
             decoration: _buildInputDecoration(
               'Dépôt de garantie (TND)*',
@@ -790,6 +826,7 @@ Future<void> _submitForm() async {
           SizedBox(height: 20),
           TextFormField(
             controller: _descriptionController,
+            style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
             maxLines: 3,
             decoration: _buildInputDecoration(
               'Description',
@@ -805,25 +842,28 @@ Future<void> _submitForm() async {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: isDarkMode ? Colors.grey[900] : Colors.grey[100],
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
+        backgroundColor: isDarkMode ? Colors.grey[850] : Colors.white,
         title: Text(
           _currentStep == 0 ? 'Détails du véhicule' : 'Tarification et localisation',
           style: TextStyle(
-            color: Colors.black87,
+            color: isDarkMode ? Colors.white : Colors.black87,
             fontWeight: FontWeight.bold,
           ),
         ),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.black87),
+          icon: Icon(Icons.arrow_back, color: isDarkMode ? Colors.white : Colors.black87),
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.close, color: Colors.black87),
+            icon: Icon(Icons.close, color: isDarkMode ? Colors.white : Colors.black87),
             onPressed: () => Navigator.of(context).pop(),
           ),
         ],
@@ -844,59 +884,77 @@ Future<void> _submitForm() async {
                         : _buildTarificationLocationStep(),
                     SizedBox(height: 24),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        if (_currentStep > 0)
-                          ElevatedButton.icon(
-                            onPressed: () {
-                              setState(() {
-                                _currentStep--;
-                              });
-                              _scrollToTop();
-                            },
-                            icon: Icon(Icons.arrow_back),
-                            label: Text('Retour'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.grey[200],
-                              foregroundColor: Colors.black87,
-                              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          ),
-                        Expanded(child: Container()),
-                        ElevatedButton.icon(
-                          onPressed: () {
-                            if (_currentStep == 0) {
-                              if (_formKey.currentState!.validate()) {
-                                setState(() {
-                                  _currentStep++;
-                                });
-                                _scrollToTop();
-                              }
-                            } else {
-                              _submitForm();
-                            }
-                          },
-                          icon: Icon(_currentStep == 0 ? Icons.arrow_forward : Icons.check),
-                          label: Text(
-                            _currentStep == 0 ? 'Suivant' : 'Ajouter Voiture',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  children: [
+    if (_currentStep > 0)
+      ElevatedButton.icon(
+        onPressed: () {
+          setState(() {
+            _currentStep--;
+          });
+          _scrollToTop();
+        },
+        icon: Icon(Icons.arrow_back),
+        label: Text('Retour'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
+          foregroundColor: isDarkMode ? Colors.white : Colors.black87,
+          padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+    Expanded(child: Container()),
+    ElevatedButton(
+      onPressed: isSubmitting
+          ? null
+          : () {
+              if (_currentStep == 0) {
+                if (_formKey.currentState!.validate()) {
+                  setState(() {
+                    _currentStep++;
+                  });
+                  _scrollToTop();
+                }
+              } else {
+                _submitForm();
+              }
+            },
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      child: isSubmitting
+          ? SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            )
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(_currentStep == 0 ? Icons.arrow_forward : Icons.check),
+                SizedBox(width: 8),
+                Text(
+                  _currentStep == 0 ? 'Suivant' : 'Ajouter Voiture',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+    ),
+  ],
+),
                   ],
                 ),
               ),

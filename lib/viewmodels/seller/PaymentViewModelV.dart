@@ -85,7 +85,7 @@ class PaymentViewModel with ChangeNotifier {
     if (token == null) throw Exception('Token not found');
 
       final response = await http.post(
-        Uri.parse('http://127.0.0.1:9098/api/vendor/initiate-payment'),
+        Uri.parse('https://dumum-tergo-backend.onrender.com/api/vendor/initiate-payment'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',

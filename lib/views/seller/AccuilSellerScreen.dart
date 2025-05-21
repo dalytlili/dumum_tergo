@@ -1,4 +1,5 @@
 import 'package:dumum_tergo/viewmodels/seller/AccueilViewModel.dart';
+import 'package:dumum_tergo/viewmodels/seller/liste_car_viewmodel.dart';
 import 'package:dumum_tergo/viewmodels/theme_viewmodel.dart';
 import 'package:dumum_tergo/views/seller/car/add-car-rental-page.dart';
 import 'package:dumum_tergo/views/seller/animated_nav_bar.dart';
@@ -35,14 +36,13 @@ class _AccuilSellerScreenState extends State<AccuilSellerScreen> {
     "Voitures en location",
     "Liste des voitures",
     "Marketplace",
-    "Liste du matériel",
+ 
     "Profil"
   ];
 
   @override
   void initState() {
     super.initState();
-    _initializeNotifications();
     _screens = [
       ListeSellerCar(
         onCarSelected: (car) {
@@ -58,6 +58,9 @@ class _AccuilSellerScreenState extends State<AccuilSellerScreen> {
                 if (mounted) {
                   setState(() {
                     _overlayContent = null;
+                       final viewModel = Provider.of<ListeCarViewModel>(context, listen: false);
+              viewModel.fetchCarsFromVendor();
+              
                   });
                 }
               },
@@ -80,21 +83,12 @@ class _AccuilSellerScreenState extends State<AccuilSellerScreen> {
         },
       ),
       const CampingItemsScreenSeller(),
-      const Placeholder(),
       EditProfileSellerView(),
     ];
   }
 
-  Future<void> _initializeNotifications() async {
-    await _notificationService.initialize();
-    _notificationsSubscription = _notificationService.notificationsStream.listen((notifications) {
-      if (mounted) {
-        setState(() {
-          _unreadNotifications = notifications.where((n) => !n['read']).length;
-        });
-      }
-    });
-  }
+
+
 
   @override
   void dispose() {
@@ -102,102 +96,7 @@ class _AccuilSellerScreenState extends State<AccuilSellerScreen> {
     super.dispose();
   }
 
-  List<List<Widget>> _appBarActions(BuildContext context) {
-    final accueilViewModel = Provider.of<AccueilViewModel>(context, listen: false);
-    return [
-      [
-        IconButton(
-          icon: const Icon(Icons.add),
-          onPressed: () {
-            showModalBottomSheet(
-              context: context,
-              isScrollControlled: true,
-              builder: (context) => Container(
-                decoration: BoxDecoration(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(25),
-                    topRight: Radius.circular(25),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      blurRadius: 10,
-                      spreadRadius: 2,
-                    ),
-                  ],
-                ),
-                height: MediaQuery.of(context).size.height * 0.9,
-                child: AddCarRentalPage(),
-              ),
-            );
-          },
-        ),
-      ],
-      [
-        Stack(
-          children: [
-            IconButton(
-              icon: const Icon(Icons.notifications),
-              onPressed: () {
-                setState(() {
-                  _overlayContent = NotificationsPage(
-                    onNotificationsRead: () {
-                      setState(() {
-                        _unreadNotifications = 0;
-                      });
-                    },
-                   
-                  );
-                });
-              },
-            ),
-            if (_unreadNotifications > 0)
-              Positioned(
-                right: 23,
-                top: 0,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: Colors.red,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  constraints: const BoxConstraints(
-                    minWidth: 20,
-                    minHeight: 20,
-                  ),
-                  child: Text(
-                    _unreadNotifications.toString(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ],
-      [
-        IconButton(
-          icon: const Icon(Icons.logout),
-          onPressed: () => accueilViewModel.logout(context),
-        ),
-      ],
-      [
-        IconButton(
-          icon: const Icon(Icons.logout),
-          onPressed: () => accueilViewModel.logout(context),
-        ),
-      ],
-      [
-        IconButton(
-          icon: const Icon(Icons.logout),
-          onPressed: () => accueilViewModel.logout(context),
-        ),
-      ],
-    ];
-  }
+
 
   @override
   Widget build(BuildContext context) {

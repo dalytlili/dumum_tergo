@@ -69,9 +69,9 @@ class SideMenuView extends StatelessWidget {
 child: CircleAvatar(
   radius: 40, // Augmenté pour une meilleure visibilité
   backgroundImage: viewModel.profileImageUrl.isNotEmpty
-      ? (viewModel.profileImageUrl.startsWith('http://127.0.0.1:9098')
+      ? (viewModel.profileImageUrl.startsWith('https://dumum-tergo-backend.onrender.com')
           // Vérification si l'URL est exactement "http://127.0.0.1:9098"
-          ? (viewModel.profileImageUrl == 'http://127.0.0.1:9098'
+          ? (viewModel.profileImageUrl == 'https://dumum-tergo-backend.onrender.com'
               ? const AssetImage('assets/images/images.png')
               : NetworkImage(viewModel.profileImageUrl)) // Si l'URL est valide, utiliser l'image depuis l'URL
           : (viewModel.profileImageUrl.startsWith('http')

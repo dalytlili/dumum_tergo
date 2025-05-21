@@ -1,6 +1,6 @@
 // models/camping_item.dart
 class CampingItem {
-  final String id;
+  late final String id;
   final String name;
   final String description;
   final double price;
@@ -53,6 +53,17 @@ class CampingItem {
       createdAt: DateTime.parse(json['createdAt']),
     );
   }
+
+static bool isValidJson(Map<String, dynamic> json) {
+  try {
+    // Vérifiez les champs obligatoires
+    return json['id'] != null && 
+           json['name'] != null && 
+           json['createdAt'] != null;
+  } catch (e) {
+    return false;
+  }
+}
 }
 
 class Vendor {

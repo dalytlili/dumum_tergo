@@ -5,7 +5,6 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'dart:convert';
 import 'dart:async';
 import 'dart:io' show Platform;
-
 class NotificationServiceuser {
   static final NotificationServiceuser _instance = NotificationServiceuser._internal();
   factory NotificationServiceuser() => _instance;
@@ -19,6 +18,8 @@ class NotificationServiceuser {
   final _notificationsController = StreamController<List<Map<String, dynamic>>>.broadcast();
   List<Map<String, dynamic>> _notifications = [];
   String? _userId;
+  bool _isConnecting = false;
+  Timer? _reconnectTimer;
 
   Stream<List<Map<String, dynamic>>> get notificationsStream => _notificationsController.stream;
 
@@ -46,18 +47,16 @@ class NotificationServiceuser {
 
   Future<void> _initNotifications() async {
     if (Platform.isIOS) {
-      await _notificationsPlugin.resolvePlatformSpecificImplementation<
-          IOSFlutterLocalNotificationsPlugin>()?.requestPermissions(
+      await _notificationsPlugin.resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()?.requestPermissions(
         alert: true,
         badge: true,
         sound: true,
         critical: true,
       );
     }
-    
+
     if (Platform.isAndroid) {
-      await _notificationsPlugin.resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>()?.createNotificationChannel(
+      await _notificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.createNotificationChannel(
         const AndroidNotificationChannel(
           'notifications_channel',
           'Notifications',
@@ -66,220 +65,199 @@ class NotificationServiceuser {
           playSound: true,
           enableVibration: true,
           enableLights: true,
-          showBadge: true,
         ),
       );
     }
 
-    const InitializationSettings initializationSettings = InitializationSettings(
+    const initializationSettings = InitializationSettings(
       android: AndroidInitializationSettings('@mipmap/ic_launcher'),
-      iOS: DarwinInitializationSettings(
-        requestAlertPermission: true,
-        requestBadgePermission: true,
-        requestSoundPermission: true,
-        requestCriticalPermission: true,
-      ),
+      iOS: DarwinInitializationSettings(),
     );
 
     await _notificationsPlugin.initialize(
       initializationSettings,
-      onDidReceiveNotificationResponse: (NotificationResponse response) {
+      onDidReceiveNotificationResponse: (response) {
         print('Notification cliquée: ${response.payload}');
       },
     );
   }
 
-  Future<void> _showNotification(String title, String body) async {
-    await _playNotificationSound();
-    
-    if (Platform.isIOS) {
-      await _notificationsPlugin.show(
-        DateTime.now().millisecond,
-        title,
-        body,
-        NotificationDetails(
-          iOS: const DarwinNotificationDetails(
-            presentAlert: true,
-            presentBadge: true,
-            presentSound: true,
-            interruptionLevel: InterruptionLevel.timeSensitive,
-          ),
-        ),
-        payload: 'notification_payload',
-      );
-    } else {
-      await _notificationsPlugin.show(
-        DateTime.now().millisecond,
-        title,
-        body,
-        NotificationDetails(
-          android: AndroidNotificationDetails(
-            'notifications_channel',
-            'Notifications',
-            channelDescription: 'Notifications en temps réel',
-            importance: Importance.max,
-            priority: Priority.high,
-            showWhen: true,
-            enableVibration: true,
-            enableLights: true,
-            playSound: true,
-            fullScreenIntent: true,
-            category: AndroidNotificationCategory.message,
-            visibility: NotificationVisibility.public,
-          ),
-        ),
-        payload: 'notification_payload',
-      );
-    }
-  }
-
   Future<void> _initializeWebSocket() async {
     try {
-      final token = await _storage.read(key: 'token');
+      String? token = await _storage.read(key: 'token');
       if (token == null) {
-        print('Aucun token trouvé');
+        print('Aucun token utilisateur trouvé');
         return;
       }
 
-      final vendorId = await _getUserIdFromToken(token);
-      if (vendorId == null) {
-        print('Impossible d\'extraire l\'ID utilisateur du token???');
+      final userId = await _getUserIdFromToken(token);
+      if (userId == null) {
+        print('Impossible d\'extraire l\'ID utilisateur du token');
         return;
       }
 
-      _userId = vendorId;
-      await _connectToWebSocket(vendorId);
+      _userId = userId;
+      await _connectToWebSocket(userId);
     } catch (e) {
-      print('Erreur d\'initialisation WebSocket: $e');
+      print('Erreur WebSocket: $e');
+      _scheduleReconnect();
     }
   }
 
   Future<String?> _getUserIdFromToken(String token) async {
-  try {
-    final parts = token.split('.');
-    if (parts.length != 3) return null;
-
-    final payload = parts[1];
-    final normalized = base64Url.normalize(payload);
-    final decoded = utf8.decode(base64Url.decode(normalized));
-    final jsonMap = jsonDecode(decoded);
-
-    // Accès au champ user._id
-    final user = jsonMap['user'];
-    if (user != null && user['_id'] != null) {
-      return user['_id'].toString();
-    }
-
-    return jsonMap['userId']?.toString() ??
-           jsonMap['id']?.toString();
-  } catch (e) {
-    print('Erreur de décodage du token: $e');
-    return null;
-  }
-}
-
-
-  Future<void> _connectToWebSocket(String userId) async {
     try {
-      const String serverIp = '127.0.0.1';
+      final parts = token.split('.');
+      if (parts.length != 3) return null;
+
+      final payload = parts[1];
+      final normalized = base64Url.normalize(payload);
+      final decoded = utf8.decode(base64Url.decode(normalized));
+      final jsonMap = jsonDecode(decoded);
+
+      print("Payload décodé : $jsonMap");
+
+      final user = jsonMap['user'];
+      if (user != null && user['_id'] != null) {
+        return user['_id'].toString();
+      }
+
+      return jsonMap['userId']?.toString() ?? jsonMap['id']?.toString();
+    } catch (e) {
+      print('Erreur de décodage token: $e');
+      return null;
+    }
+  }
+
+ Future<void> _connectToWebSocket(String userId) async {
+    if (_isConnecting) return;
+    _isConnecting = true;
+
+    try {
+      // Fermer les connexions existantes
+      await _socketSubscription?.cancel();
+      await _channel?.sink.close();
+
+      const String serverUrl = 'dumum-tergo-backend.onrender.com';
       _channel = WebSocketChannel.connect(
-        Uri.parse('ws://$serverIp:8084?userId=$userId'),
+        Uri.parse('wss://$serverUrl/?userId=$userId'),
       );
+
+      print('Connexion WebSocket réussie avec l\'ID utilisateur: $userId');
 
       _socketSubscription = _channel!.stream.listen(
         (message) => _handleSocketMessage(message),
         onError: (error) {
           print('WebSocket error: $error');
-          _reconnectWebSocket(userId);
+          _scheduleReconnect();
         },
         onDone: () {
           print('WebSocket fermé');
-          _reconnectWebSocket(userId);
+          _scheduleReconnect();
         },
       );
 
+      _isConnecting = false;
     } catch (e) {
       print('Erreur de connexion WebSocket: $e');
-      _reconnectWebSocket(userId);
+      _isConnecting = false;
+      _scheduleReconnect();
     }
   }
-
-  void _reconnectWebSocket(String userId) {
-    Future.delayed(const Duration(seconds: 5), () {
-      _connectToWebSocket(userId);
+  void _scheduleReconnect() {
+    _reconnectTimer?.cancel();
+    _reconnectTimer = Timer(const Duration(seconds: 5), () {
+      if (_userId != null) {
+        _connectToWebSocket(_userId!);
+      }
     });
   }
 
-  void _handleSocketMessage(String message) {
+void _handleSocketMessage(String message) {
     try {
-      final data = json.decode(message) as Map<String, dynamic>;
-      
-      if (data['type'] == 'notification') {
-        _handleNewNotification(data['data']);
-      } 
-      else if (data['type'] == 'notifications') {
-        _handleExistingNotifications(data['data']);
+      final data = json.decode(message);
+      if (data is! Map<String, dynamic>) {
+        print('Message inattendu: $data');
+        return;
       }
-      
+
+      print('Message reçu : $data');
+
+      final type = data['type'];
+      final content = data['data'];
+      if (content is! Map<String, dynamic>) {
+        print('Données de notification invalides : $content');
+        return;
+      }
+
+     if (type == 'reservation_rejected' || type == 'reservation_accepted') {
+  _handleNewNotification(content, type);  // Passer le type en paramètre
+} else if (type == 'existing_notifications') {
+        _handleExistingNotifications(content);
+      }
     } catch (e) {
       print('Erreur de traitement du message: $e');
     }
   }
 
-  void _handleNewNotification(Map<String, dynamic> notification) {
+
+  void _handleNewNotification(Map<String, dynamic> notification, String type) {
     _notifications.insert(0, notification);
-    _notificationsController.add(_notifications);
-    
-    // Afficher la notification système
-    final title = _getNotificationTitle(notification);
-    final body = _getNotificationBody(notification);
+    _notificationsController.add(List.from(_notifications));
+
+    String title;
+    String body;
+
+    if (type == 'reservation_accepted') {
+      title = 'Réservation acceptée';
+      body = 'Votre réservation a été acceptée';
+    } else if (type == 'reservation_rejected') {
+      title = 'Réservation refusée';
+      body = 'Votre réservation a été refusée';
+    } else {
+      title = 'Nouvelle réservation';
+      body = 'Nouvelle réservation reçue';
+    }
+
     _showNotification(title, body);
   }
 
-  void _handleExistingNotifications(List<dynamic> notifications) {
-    _notifications = notifications.map((n) => n as Map<String, dynamic>).toList();
-    _notificationsController.add(_notifications);
-    
-    // Afficher une notification pour les notifications non lues
-    if (notifications.isNotEmpty) {
-      final notification = notifications[0] as Map<String, dynamic>;
-      final title = _getNotificationTitle(notification);
-      final body = _getNotificationBody(notification);
-      _showNotification(title, body);
+
+  void _handleExistingNotifications(Map<String, dynamic> data) {
+    if (data['notifications'] is List) {
+      final List notificationsList = data['notifications'];
+      _notifications = notificationsList.whereType<Map<String, dynamic>>().toList();
+      _notificationsController.add(List.from(_notifications));
     }
   }
 
-  String _getNotificationTitle(Map<String, dynamic> notification) {
-    switch (notification['type']) {
-      case 'reservation':
-        return 'Nouvelle réservation';
-      case 'cancellation':
-        return 'Annulation de réservation';
-      case 'update':
-        return 'Mise à jour';
-      default:
-        return 'Nouvelle notification';
-    }
-  }
+  Future<void> _showNotification(String title, String body) async {
+    await _playNotificationSound();
 
-  String _getNotificationBody(Map<String, dynamic> notification) {
-    final data = notification['data'] as Map<String, dynamic>;
-    switch (notification['type']) {
-      case 'reservation':
-        return 'Nouvelle réservation reçue pour ${data['carBrand']} ${data['carModel']}';
-      case 'cancellation':
-        return 'Réservation annulée pour ${data['carBrand']} ${data['carModel']}';
-      case 'update':
-        return 'Mise à jour de votre réservation';
-      default:
-        return notification['message'] ?? 'Nouvelle notification reçue';
-    }
-  }
+    const notificationDetails = NotificationDetails(
+      android: AndroidNotificationDetails(
+        'notifications_channel',
+        'Notifications',
+        channelDescription: 'Notifications en temps réel',
+        importance: Importance.max,
+        priority: Priority.high,
+        showWhen: true,
+        enableVibration: true,
+        enableLights: true,
+        playSound: true,
+      ),
+      iOS: DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      ),
+    );
 
-  void dispose() {
-    _socketSubscription?.cancel();
-    _channel?.sink.close();
-    _audioPlayer.dispose();
-    _notificationsController.close();
+    await _notificationsPlugin.show(
+      DateTime.now().millisecondsSinceEpoch % 100000,
+      title,
+      body,
+      notificationDetails,
+      payload: 'notification_payload',
+    );
   }
-} 
+}

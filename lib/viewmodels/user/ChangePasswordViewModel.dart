@@ -74,7 +74,7 @@ class ChangePasswordViewModel with ChangeNotifier {
 
       // Envoyer la requête à l'API
       final response = await http.post(
-        Uri.parse('http://127.0.0.1:9098/api/change-password'), // URL de l'API
+        Uri.parse('https://dumum-tergo-backend.onrender.com/api/change-password'), // URL de l'API
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',

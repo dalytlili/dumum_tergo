@@ -44,7 +44,7 @@ class CampingItemCardSellerViewModel with ChangeNotifier {
     if (!confirmDelete) return;
 
     final token = await storage.read(key: 'seller_token');
-    final url = Uri.parse('http://localhost:9098/api/camping/items/${item.id}');
+    final url = Uri.parse('https://dumum-tergo-backend.onrender.com/api/camping/items/${item.id}');
 
     try {
       final response = await http.delete(
@@ -142,7 +142,7 @@ Future<CampingItem?> fetchItemDetails(String itemId) async {
 
   try {
     final response = await http.get(
-      Uri.parse('http://localhost:9098/api/camping/items/$itemId'),
+      Uri.parse('https://dumum-tergo-backend.onrender.com/api/camping/items/$itemId'),
       headers: {
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',

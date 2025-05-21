@@ -48,7 +48,7 @@ class _VendorShopScreenState extends State<VendorShopScreen> {
       final token = await storage.read(key: 'token');
 
       final response = await http.get(
-        Uri.parse('http://localhost:9098/api/camping/items/vendor/${widget.vendorId}'),
+        Uri.parse('https://dumum-tergo-backend.onrender.com/api/camping/items/vendor/${widget.vendorId}'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -200,7 +200,7 @@ Widget _buildVendorInfoOverlay(BuildContext context, Vendor vendor) {
       CircleAvatar(
         radius: 40,
         backgroundImage: vendor.image != null
-            ? NetworkImage('http://localhost:9098${vendor.image!}')
+            ? NetworkImage('https://dumum-tergo-backend.onrender.com${vendor.image!}')
             : const AssetImage('assets/default_vendor.png') as ImageProvider,
         onBackgroundImageError: (_, __) {
           // Optionnel : image de secours
@@ -306,7 +306,7 @@ Widget _buildVendorInfoOverlay(BuildContext context, Vendor vendor) {
               CircleAvatar(
                 radius: 40,
                 backgroundImage: vendor.image != null 
-                  ? NetworkImage('http://localhost:9098${vendor.image!}')
+                  ? NetworkImage('https://dumum-tergo-backend.onrender.com${vendor.image!}')
                   : const AssetImage('assets/default_vendor.png') as ImageProvider,
                 onBackgroundImageError: (_, __) {
                   // Vous pouvez définir une image par défaut ici si nécessaire

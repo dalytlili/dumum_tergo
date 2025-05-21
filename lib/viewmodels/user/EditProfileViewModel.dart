@@ -46,7 +46,7 @@ class EditProfileViewModel with ChangeNotifier {
     }
 
     final response = await http.get(
-      Uri.parse('http://127.0.0.1:9098/api/profile'),
+      Uri.parse('https://dumum-tergo-backend.onrender.com/api/profile'),
       headers: {
         'Authorization': 'Bearer $token',
       },
@@ -77,7 +77,7 @@ phoneNumberController.text = rawPhoneNumber;
         imageUrlController.text = userData['image'] != null &&
                 userData['image'].startsWith('http')
             ? userData['image']
-            : "http://127.0.0.1:9098${userData['image'] ?? '/images/images.png'}";
+            : "https://res.cloudinary.com/dcs2edizr/image/upload/${userData['image'] ?? '/images/images.png'}";
 
 
         // Notify listeners for UI update
@@ -111,7 +111,7 @@ Future<void> updateProfile(BuildContext context) async {
     String? token = await storage.read(key: 'token');
     if (token == null) throw Exception('Token not found');
 
-    final uri = Uri.parse('http://127.0.0.1:9098/api/update-Profile');
+    final uri = Uri.parse('https://dumum-tergo-backend.onrender.com/api/update-Profile');
     var request = http.MultipartRequest('POST', uri)
       ..headers['Authorization'] = 'Bearer $token'
       ..fields['name'] = nameController.text

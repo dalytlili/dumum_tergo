@@ -1,10 +1,13 @@
 import 'package:dumum_tergo/constants/colors.dart';
 import 'package:dumum_tergo/viewmodels/user/HomeViewModel.dart';
+import 'package:dumum_tergo/views/user/event/camping_events_screen.dart';
+import 'package:dumum_tergo/views/user/experiences/experiences_screen.dart';
+import 'package:dumum_tergo/views/user/experiences/user_search_screen.dart';
 import 'package:dumum_tergo/views/user/item/camping_items_screen.dart';
 import 'package:dumum_tergo/views/user/car/notifications_page.dart';
 import 'package:dumum_tergo/views/user/car/rental_search_view.dart';
 import 'package:dumum_tergo/views/user/side_menu_view.dart';
-import 'package:dumum_tergo/views/user/auth/profile_view.dart';
+import 'package:dumum_tergo/views/user/experiences/profile_view.dart';
 import 'package:flutter/material.dart';
 import '../../services/notification_service_user.dart';
 import 'dart:async';
@@ -28,10 +31,10 @@ class _AnimatedNavBarState extends State<AnimatedNavBar> {
   final NotificationServiceuser _notificationService = NotificationServiceuser();
 
   final List<Widget> _screens = [
-    const HomeView(), // Remplacez Placeholder par votre vrai écran d'accueil
+    const ExperiencesScreen(), // Remplacez Placeholder par votre vrai écran d'accueil
     const RentalSearchView(),
     const CampingItemsScreen(),
-    const Placeholder(), // Écran Événement
+    const CampingEventsScreen(), // Écran Événement
     ProfileView(),
   ];
 
@@ -66,7 +69,7 @@ class _AnimatedNavBarState extends State<AnimatedNavBar> {
   @override
   void dispose() {
     _notificationSubscription.cancel();
-    _notificationService.dispose();
+   // _notificationService.dispose();
     super.dispose();
   }
 
@@ -80,61 +83,72 @@ class _AnimatedNavBarState extends State<AnimatedNavBar> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_appBarTitles[_currentIndex]),
-        actions: [
-          Stack(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.notifications),
-                onPressed: () async {
-                  final result = await Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => NotificationsUserPage(
-                        onNotificationsRead: () {
-                          setState(() {
-                            _unreadNotifications = 0;
-                          });
-                        },
-                      ),
-                    ),
-                  );
-                  
-                  if (result != null && result is int) {
-                    setState(() {
-                      _unreadNotifications = result;
-                    });
-                  }
-                },
-              ),
-              if (_unreadNotifications > 0)
-                Positioned(
-                  right: 8,
-                  top: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    constraints: const BoxConstraints(
-                      minWidth: 16,
-                      minHeight: 16,
-                    ),
-                    child: Text(
-                      _unreadNotifications > 9 ? '9+' : _unreadNotifications.toString(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ],
+  title: Text(_appBarTitles[_currentIndex]),
+  actions: [
+   IconButton(
+  icon: const Icon(Icons.search),
+  onPressed: () {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const UserSearchScreen(),
       ),
+    );
+  },
+),
+    Stack(
+      children: [
+        IconButton(
+          icon: const Icon(Icons.notifications),
+          onPressed: () async {
+            final result = await Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => NotificationsUserPage(
+                  onNotificationsRead: () {
+                    setState(() {
+                      _unreadNotifications = 0;
+                    });
+                  },
+                ),
+              ),
+            );
+            
+            if (result != null && result is int) {
+              setState(() {
+                _unreadNotifications = result;
+              });
+            }
+          },
+        ),
+        if (_unreadNotifications > 0)
+          Positioned(
+            right: 8,
+            top: 8,
+            child: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                color: Colors.red,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              constraints: const BoxConstraints(
+                minWidth: 16,
+                minHeight: 16,
+              ),
+              child: Text(
+                _unreadNotifications > 9 ? '9+' : _unreadNotifications.toString(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+      ],
+    ),
+  ],
+),
+
       drawer: const SideMenuView(),
       body: _screens[_currentIndex],
       bottomNavigationBar: Container(

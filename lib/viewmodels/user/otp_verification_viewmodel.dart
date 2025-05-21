@@ -33,7 +33,7 @@ class OtpVerificationViewModel extends ChangeNotifier {
 
   try {
     final response = await http.post(
-      Uri.parse('http://127.0.0.1:9098/api/verifyOtpPhone'),
+      Uri.parse('https://dumum-tergo-backend.onrender.com/api/verifyOtpPhone'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'mobile': fullPhoneNumber,

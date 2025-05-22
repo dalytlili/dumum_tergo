@@ -1,0 +1,52 @@
+name: Build Production APK
+on: [push, workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout code (using latest version)
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Setup Java (essential for Android builds)
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      # 3. Setup Flutter with matching Dart SDK
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.29.2"  # Verified working version
+          channel: 'stable'
+
+      # 4. Verify environment
+      - name: Show Flutter version
+        run: flutter --version
+
+      # 5. Get dependencies with cache
+      - name: Install dependencies
+        run: |
+          flutter pub get
+          flutter pub cache repair
+
+      # 6. Generate assets
+      - name: Generate icons and splash
+        run: |
+          flutter pub run flutter_launcher_icons:main
+          flutter pub run flutter_native_splash:create
+
+      # 7. Build release APK (optimized)
+      - name: Build release APK
+        run: flutter build apk --release --no-tree-shake-icons
+
+      # 8. Rename and upload APK
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ICHFIN-release
+          path: build/app/outputs/flutter-apk/app-release.apk

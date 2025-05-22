@@ -6,66 +6,54 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout code
-      - name: Checkout repository
+      - name: Checkout du dépôt
         uses: actions/checkout@v4
 
-      # 2. Setup Java
-      - name: Set up JDK 17
+      - name: Configuration de JDK 17
         uses: actions/setup-java@v3
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      # 3. Setup Flutter
-      - name: Set up Flutter
+      - name: Configuration de Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: "3.29.2"
           channel: 'stable'
 
-      # 4. Verify environment
-      - name: Show Flutter version
-        run: flutter --version
-
-      # 5. Verify or create gradle-wrapper.properties
-      - name: Ensure gradle-wrapper.properties exists
+      - name: Clean Gradle cache
         run: |
-          if [ ! -f android/gradle/wrapper/gradle-wrapper.properties ]; then
-            mkdir -p android/gradle/wrapper
-            echo "distributionBase=GRADLE_USER_HOME" > android/gradle/wrapper/gradle-wrapper.properties
-            echo "distributionPath=wrapper/dists" >> android/gradle/wrapper/gradle-wrapper.properties
-            echo "distributionUrl=https\://services.gradle.org/distributions/gradle-8.0-bin.zip" >> android/gradle/wrapper/gradle-wrapper.properties
-            echo "zipStoreBase=GRADLE_USER_HOME" >> android/gradle/wrapper/gradle-wrapper.properties
-            echo "zipStorePath=wrapper/dists" >> android/gradle/wrapper/gradle-wrapper.properties
-          fi
+          rm -rf ~/.gradle/caches/
+          cd android
+          ./gradlew clean
+          cd ..
 
-      # 6. Get dependencies with cache
       - name: Install dependencies
         run: |
-          flutter pub get
           flutter pub cache repair
+          flutter pub upgrade
+          cd android
+          ./gradlew --refresh-dependencies
+          cd ..
 
-      # 7. Generate assets (with error handling)
-      - name: Generate icons and splash
+      - name: Mise à jour de Gradle vers 8.2
         run: |
-          # Generate launcher icons
+          cd android
+          ./gradlew wrapper --gradle-version 8.2
+          cd ..
+
+      - name: Génération des icônes et écran de démarrage
+        run: |
           flutter pub run flutter_launcher_icons
-          
-          # Generate splash screen only if package exists
           if grep -q "flutter_native_splash" pubspec.yaml; then
             flutter pub run flutter_native_splash:create
-          else
-            echo "flutter_native_splash not found in pubspec.yaml, skipping splash screen generation"
           fi
 
-      # 8. Build release APK
-      - name: Build release APK
+      - name: Construction de l'APK en mode release
         run: flutter build apk --release --no-tree-shake-icons
 
-      # 9. Upload APK
-      - name: Upload APK artifact
+      - name: Téléversement de l'APK
         uses: actions/upload-artifact@v4
         with:
-          name: ICHFIN-release
+          name: dumumtergo-release
           path: build/app/outputs/flutter-apk/app-release.apk

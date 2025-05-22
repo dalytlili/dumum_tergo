@@ -28,13 +28,25 @@ jobs:
       - name: Show Flutter version
         run: flutter --version
 
-      # 5. Get dependencies with cache
+      # 5. Verify or create gradle-wrapper.properties
+      - name: Ensure gradle-wrapper.properties exists
+        run: |
+          if [ ! -f android/gradle/wrapper/gradle-wrapper.properties ]; then
+            mkdir -p android/gradle/wrapper
+            echo "distributionBase=GRADLE_USER_HOME" > android/gradle/wrapper/gradle-wrapper.properties
+            echo "distributionPath=wrapper/dists" >> android/gradle/wrapper/gradle-wrapper.properties
+            echo "distributionUrl=https\://services.gradle.org/distributions/gradle-8.0-bin.zip" >> android/gradle/wrapper/gradle-wrapper.properties
+            echo "zipStoreBase=GRADLE_USER_HOME" >> android/gradle/wrapper/gradle-wrapper.properties
+            echo "zipStorePath=wrapper/dists" >> android/gradle/wrapper/gradle-wrapper.properties
+          fi
+
+      # 6. Get dependencies with cache
       - name: Install dependencies
         run: |
           flutter pub get
           flutter pub cache repair
 
-      # 6. Generate assets (with error handling)
+      # 7. Generate assets (with error handling)
       - name: Generate icons and splash
         run: |
           # Generate launcher icons
@@ -47,11 +59,11 @@ jobs:
             echo "flutter_native_splash not found in pubspec.yaml, skipping splash screen generation"
           fi
 
-      # 7. Build release APK
+      # 8. Build release APK
       - name: Build release APK
         run: flutter build apk --release --no-tree-shake-icons
 
-      # 8. Upload APK
+      # 9. Upload APK
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
